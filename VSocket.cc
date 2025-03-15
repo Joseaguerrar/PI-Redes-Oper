@@ -38,12 +38,16 @@
   **/
  void VSocket::BuildSocket( char t, bool IPv6 ){
  
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "VSocket::BuildSocket, (reason)" );
-    }
- 
+   this->IPv6 = IPv6;
+   this->type = t;
+   
+   int domain = (IPv6) ? AF_INET6 : AF_INET;
+   int socketType = (t == 's') ? SOCK_STREAM : SOCK_DGRAM;
+
+   this->idSocket = socket( domain, socketType, 0 );
+   if ( -1 == this->idSocket ) {
+      throw std::runtime_error( "VSocket::BuildSocket(), error al crear socket" );
+   }
  }
  
  
@@ -64,10 +68,8 @@
    *
   **/
  void VSocket::Close(){
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "VSocket::Close()" );
+    if (close(this->idSocket) == -1) {
+       throw std::runtime_error( "VSocket::Close(), error al cerrar socket" );
     }
  
  }
@@ -83,14 +85,21 @@
   **/
  int VSocket::EstablishConnection( const char * hostip, int port ) {
  
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "VSocket::EstablishConnection" );
+    struct sockaddr_in server_addr;
+    memset( &server_addr, 0, sizeof(server_addr) );
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons( port );
+
+    if ( inet_pton( AF_INET, hostip, &server_addr.sin_addr ) <= 0 ) {
+       perror( "inet_pton error" );
+       throw std::runtime_error( "VSocket::EstablishConnection(), error en inet_pton" );
     }
- 
-    return st;
- 
+
+    if ( connect( this->idSocket, (struct sockaddr *) &server_addr, sizeof(server_addr) ) == -1 ) {
+       perror( "connect error" );
+       throw std::runtime_error( "VSocket::EstablishConnection(), error al conectar" );
+    }
+    return 0;
  }
  
  
