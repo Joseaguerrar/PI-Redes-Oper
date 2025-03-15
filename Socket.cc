@@ -19,6 +19,7 @@
  #include <stdio.h>		// printf
  
  #include "Socket.h"		// Derived class
+ #include "VSocket.h"		// Base class
  
  /**
    *  Class constructor
@@ -88,13 +89,11 @@
   **/
  size_t Socket::Read( void * buffer, size_t size ) {
  
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "Socket::Read( void *, size_t )" );
+    ssize_t bytesRead = read( this->idSocket, buffer, size );
+    if ( bytesRead == -1 ) {
+       throw std::runtime_error( "Socket::Read( void *, size_t ), error al leer socket" );
     }
- 
-    return st;
+    return static_cast<size_t>( bytesRead );
  
  }
  
@@ -109,13 +108,11 @@
   **/
  size_t Socket::Write( const void * buffer, size_t size ) {
  
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "Socket::Write( void *, size_t )" );
+    ssize_t bytesWritten = write( this->idSocket, buffer, size );
+    if ( bytesWritten == -1 ) {
+       throw std::runtime_error( "Socket::Write( void *, size_t ), error al escribir socket" );
     }
- 
-    return st;
+    return static_cast<size_t>( bytesWritten );
  
  }
  
@@ -128,13 +125,5 @@
    *
   **/
  size_t Socket::Write( const char * text ) {
- 
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "Socket::Write( char * )" );
-    }
- 
-    return st;
- 
+   return this->Write( static_cast<const void *>( text ), strlen( text ) );
  }
