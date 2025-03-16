@@ -85,19 +85,19 @@
   **/
  int VSocket::EstablishConnection( const char * hostip, int port ) {
  
-    struct sockaddr_in server_addr;
-    memset( &server_addr, 0, sizeof(server_addr) );
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons( port );
+    struct sockaddr_in server_addr; // Estructura para dirección del servidor
+    memset( &server_addr, 0, sizeof(server_addr) ); // Limpiar estructura
+    server_addr.sin_family = AF_INET; // IPv4
+    server_addr.sin_port = htons( port ); 
 
     if ( inet_pton( AF_INET, hostip, &server_addr.sin_addr ) <= 0 ) {
-       perror( "inet_pton error" );
-       throw std::runtime_error( "VSocket::EstablishConnection(), error en inet_pton" );
+       perror( "inet_pton error" ); 
+       throw std::runtime_error( "VSocket::EstablishConnection(), error en inet_pton" ); // Error inet_pton
     }
 
     if ( connect( this->idSocket, (struct sockaddr *) &server_addr, sizeof(server_addr) ) == -1 ) {
        perror( "connect error" );
-       throw std::runtime_error( "VSocket::EstablishConnection(), error al conectar" );
+       throw std::runtime_error( "VSocket::EstablishConnection(), error al conectar" );  // Error connect
     }
     return 0;
  }
@@ -112,11 +112,30 @@
    *
   **/
  int VSocket::EstablishConnection( const char *host, const char *service ) {
-    int st = -1;
- 
-    throw std::runtime_error( "VSocket::EstablishConnection" );
- 
-    return st;
- 
+   struct addrinfo hints, *res, *rp;
+    
+    // Limpiar estructura hints y definir criterios de búsqueda
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = this->IPv6 ? AF_INET6 : AF_INET;  // IPv4 o IPv6
+    hints.ai_socktype = SOCK_STREAM; // TCP
+
+    // Obtener información de la dirección usando getaddrinfo
+    int status = getaddrinfo(host, service, &hints, &res);
+    if (status != 0) {
+        fprintf(stderr, "getaddrinfo error: %s\n", gai_strerror(status));
+        return -1; // Retornar -1 si hubo un error en la resolución del host
+    }
+
+    // Iterar sobre todas las direcciones devueltas y tratar de conectar
+    for (rp = res; rp != NULL; rp = rp->ai_next) {
+        if (connect(this->idSocket, rp->ai_addr, rp->ai_addrlen) == 0) {
+            freeaddrinfo(res);
+            return 0;  // Conexión exitosa
+        }
+    }
+
+    // Si llegamos aquí, ninguna dirección funcionó
+    freeaddrinfo(res);
+    return -1; // Indicar error si no se pudo conectar a ninguna dirección
  }
  
