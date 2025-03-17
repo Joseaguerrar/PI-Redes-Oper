@@ -36,7 +36,7 @@ make run NUM=6   # Ejecuta ipv6-test.out
 make clean   # Elimina archivos objeto y ejecutables
 
 
-Antes de ejecutar las pruebas en IPv6, es necesario iniciar el servidor en Python:
+Antes de ejecutar las pruebas en IPv6, es necesario iniciar el servidor en otra terminal en Python:
 
 
 python3 server.py
