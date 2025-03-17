@@ -13,10 +13,7 @@ El proyecto contiene los siguientes archivos:
   ├── Socket.h # Interfaz de la clase Socket 
   ├── Socket.cc # Implementación de la clase Socket 
   ├── VSocket.h # Interfaz de la clase base VSocket 
-  ├── VSocket.cc # Implementación de la clase VSocket 
-  ├── ipv4-test.out # Ejecutable para IPv4 
-  ├── ipv6-test.out # Ejecutable para IPv6 
-  └── obj/ # Carpeta donde se guardan los archivos objeto (.o)
+  └── VSocket.cc # Implementación de la clase VSocket 
 ```
   
 
