@@ -12,14 +12,14 @@
 #include "Socket.h"
 
 int main( int argc, char * argv[] ) {
-   const char * lab = "fe80::4161:e292:8c1d:e3c0%enp0s31f6";
+   const char * lab/*Server IPv6*/ = "fe80::215:5dff:feb9:60eb%eth0"; // Reemplazando con la interfaz correcta
    const char * request = "GET / HTTP/1.1\r\nhost: redes.ecci\r\n\r\n";
 
-   Socket s( 's', true );
+   Socket s( 's', true ); // Crear socket IPv6
    char a[512];
 
    memset( a, 0, 512 );
-   s.MakeConnection( lab, (char *) "http" );
+   s.MakeConnection( lab, (char *) "8080" ); // Conectar al servidor con el puerto y no servicio http
    s.Write(  request );
    s.Read( a, 512 );
    printf( "%s\n", a);
