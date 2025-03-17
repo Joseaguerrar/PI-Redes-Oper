@@ -5,7 +5,7 @@ Incluye pruebas de conexión y transferencia de datos mediante un servidor HTTP 
 
 ## 📁 **Estructura del Proyecto**
 El proyecto contiene los siguientes archivos:
-
+```bash
 . ├── Makefile # Archivo para compilar y ejecutar los programas
   ├── server.py # Servidor HTTP en Python (IPv6) 
   ├── ipv4-test.cc # Cliente en C++ para pruebas con IPv4 
@@ -17,9 +17,8 @@ El proyecto contiene los siguientes archivos:
   ├── ipv4-test.out # Ejecutable para IPv4 
   ├── ipv6-test.out # Ejecutable para IPv6 
   └── obj/ # Carpeta donde se guardan los archivos objeto (.o)
-
+```
   
----
 
 ## 🛠 **Comandos disponibles en el Makefile**
 Para compilar y ejecutar los programas, puedes usar los siguientes comandos:
