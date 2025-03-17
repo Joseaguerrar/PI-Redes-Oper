@@ -38,7 +38,6 @@ make clean   # Elimina archivos objeto y ejecutables
 
 Antes de ejecutar las pruebas en IPv6, es necesario iniciar el servidor en Python:
 
-```bash
 
 python3 server.py
 ```
@@ -46,9 +45,7 @@ python3 server.py
 
 ### Respuestas esperadas
 🔹 Respuesta esperada para IPv4 (make run4)
-html
-Copiar
-Editar
+
 <HTML>
 <HEAD>
 <link rel="stylesheet" type="text/css" href="/aArt/css/aArt.css" media="screen">
@@ -71,9 +68,7 @@ Editar
 </HTML>
 
 🔹 Respuesta esperada para IPv6 (make run6)
-http
-Copiar
-Editar
+
 HTTP/1.0 200 OK
 Server: SimpleHTTP/0.6 Python/3.10.12
 Date: Mon, 17 Mar 2025 03:37:19 GMT
