@@ -157,8 +157,36 @@ int VSocket::EstablishConnection( const char *host, const char *service ) {
   *
  **/
 int VSocket::Bind( int port ) {
-   int st = -1;
+   int st = -1;  // Indicar error si no se pudo conectar a ninguna dirección
+   if (this->IPv6) {
+      struct sockaddr_in6 addr6;
+      memset(&addr6, 0, sizeof(addr6));
+      addr6.sin6_family = AF_INET6;
+      addr6.sin6_port = htons(port);
+      addr6.sin6_addr = in6addr_any;  // Cualquier interfaz IPv6
 
+      if (bind(this->idSocket, (struct sockaddr*)&addr6, sizeof(addr6)) == -1) {
+          perror("VSocket::Bind() IPv6");
+          throw std::runtime_error("Error en bind() IPv6");
+      } else {
+          st = 0;
+      }
+   } else {
+         struct sockaddr_in addr4;
+         memset(&addr4, 0, sizeof(addr4));
+         addr4.sin_family = AF_INET;
+         addr4.sin_port = htons(port);
+         addr4.sin_addr.s_addr = INADDR_ANY;  // Cualquier interfaz IPv4
+
+         if (bind(this->idSocket, (struct sockaddr*)&addr4, sizeof(addr4)) == -1) {
+            perror("VSocket::Bind() IPv4");
+            throw std::runtime_error("Error en bind() IPv4");
+         } else {
+            st = 0;
+         }
+   }
+
+   this->port = port;  // Guarda el puerto en la clase por si lo necesita después
    return st;
 
 }
