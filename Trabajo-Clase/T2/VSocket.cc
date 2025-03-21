@@ -203,9 +203,24 @@ int VSocket::Bind( int port ) {
   *
  **/
 size_t VSocket::sendTo( const void * buffer, size_t size, void * addr ) {
-   int st = -1;
+   if (addr == nullptr) { // No se puede enviar a una dirección nula
+      throw std::runtime_error("VSocket::sendTo(), dirección destino nula");
+   }
+   ssize_t sentBytes = sendto(
+      this->idSocket,                  // socket descriptor
+      buffer,                          // datos a enviar
+      size,                            // tamaño de los datos
+      0,                               // flags (normalmente 0)
+      (struct sockaddr *)addr,        // dirección destino
+      (this->IPv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in)) // tamaño dirección
+  );
 
-   return st;
+  if (sentBytes == -1) {
+      perror("VSocket::sendTo()");
+      throw std::runtime_error("Error en sendto()");
+  }
+
+  return static_cast<size_t>(sentBytes);
 
 }
 
@@ -223,9 +238,27 @@ size_t VSocket::sendTo( const void * buffer, size_t size, void * addr ) {
   *
  **/
 size_t VSocket::recvFrom( void * buffer, size_t size, void * addr ) {
-   int st = -1;
+   if (addr == nullptr) {  // No se puede recibir desde una dirección nula
+      throw std::runtime_error("VSocket::recvFrom(), dirección origen nula");
+   }
 
-   return st;
+   socklen_t addrLen = this->IPv6 ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in);
+
+   ssize_t receivedBytes = recvfrom(
+      this->idSocket,                  // socket descriptor
+      buffer,                          // buffer donde se guardará el mensaje
+      size,                            // tamaño del buffer
+      0,                               // flags
+      (struct sockaddr *)addr,        // dirección origen (remitente)
+      &addrLen                         // puntero al tamaño de la dirección
+   );
+
+   if (receivedBytes == -1) {
+      perror("VSocket::recvFrom()");
+      throw std::runtime_error("Error en recvfrom()");
+   }
+
+   return static_cast<size_t>(receivedBytes);
 
 }
 
