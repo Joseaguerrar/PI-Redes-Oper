@@ -1,6 +1,5 @@
 # Linux Makefile
 # Socket classes
-#
 
 # Compilador
 CC  := gcc
@@ -12,10 +11,11 @@ DEPS := Socket.h VSocket.h
 # Carpetas
 OBJ_DIR := obj
 SRC_DIR := .
-BIN_DIR := .
+BIN_DIR := exec
 
-# Crear carpeta obj si no existe
+# Crear carpetas necesarias si no existen
 $(shell mkdir -p $(OBJ_DIR))
+$(shell mkdir -p $(BIN_DIR))
 
 # Archivos objeto
 OBJ_IPV4 := $(OBJ_DIR)/ipv4-test.o $(OBJ_DIR)/Socket.o $(OBJ_DIR)/VSocket.o
