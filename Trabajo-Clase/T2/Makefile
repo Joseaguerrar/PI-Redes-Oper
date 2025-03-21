@@ -1,30 +1,56 @@
-# Linux Makefile
-# Socket class
-#
+# Makefile para UDP IPv6 Client-Server
+# Universidad de Costa Rica - CI0123
+# Proyecto Integrador
 
-CC  := gcc
+# Compilador
 CXX := g++
-CFLAGS := -g -c
-CXXFLAGS := -g -c
-DEPS := Socket.h
-TARGETS := ipv6-udp-client.out ipv6-udp-server.out
+CXXFLAGS := -g -Wall -c
 
-ALL := $(TARGETS)
-$(info $$TARGETS = $(TARGETS))
+# Carpetas
+SRC_DIR := .
+OBJ_DIR := obj
+BIN_DIR := exec
 
-%.o: %.cc $(DEPS)
-	$(CXX) $(CXXFLAGS) $<
+# Crear carpetas necesarias si no existen
+$(shell mkdir -p $(OBJ_DIR))
+$(shell mkdir -p $(BIN_DIR))
 
-%.out: %.o Socket.o VSocket.o
-	$(info $$^ = $^)
-	$(CXX) -g $^ VSocket.o Socket.o -o $^
+# Archivos fuente
+CLIENT_SRC := $(SRC_DIR)/ipv6-udp-client.cc
+SERVER_SRC := $(SRC_DIR)/ipv6-udp-server.cc
+SOCKET_SRC := $(SRC_DIR)/Socket.cc
+VSOCKET_SRC := $(SRC_DIR)/VSocket.cc
+DEPS := Socket.h VSocket.h
 
-ipv6-udp-client.out: ipv6-udp-client.o VSocket.o Socket.o
-	$(CXX) -g ipv6-udp-client.o VSocket.o Socket.o -o $@
+# Objetos
+OBJS_CLIENTE := $(OBJ_DIR)/ipv6-udp-client.o $(OBJ_DIR)/Socket.o $(OBJ_DIR)/VSocket.o
+OBJS_SERVIDOR := $(OBJ_DIR)/ipv6-udp-server.o $(OBJ_DIR)/Socket.o $(OBJ_DIR)/VSocket.o
 
-ipv6-udp-server.out: ipv6-udp-server.o VSocket.o Socket.o
-	$(CXX) -g ipv6-udp-server.o VSocket.o Socket.o -o $@
+# Ejecutables
+TARGET_CLIENTE := $(BIN_DIR)/cliente
+TARGET_SERVIDOR := $(BIN_DIR)/servidor
 
+# Regla por defecto: compilar ambos
+all: $(TARGET_CLIENTE) $(TARGET_SERVIDOR)
+
+# Compilar ejecutables
+$(TARGET_CLIENTE): $(OBJS_CLIENTE)
+	$(CXX) -g $^ -o $@
+
+$(TARGET_SERVIDOR): $(OBJS_SERVIDOR)
+	$(CXX) -g $^ -o $@
+
+# Compilar objetos individuales
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc $(DEPS)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+# Ejecutar cliente o servidor
+run-client: $(TARGET_CLIENTE)
+	./$(TARGET_CLIENTE)
+
+run-server: $(TARGET_SERVIDOR)
+	./$(TARGET_SERVIDOR)
+
+# Limpiar archivos objeto y ejecutables
 clean:
-	rm -f *.o *.out
-
+	rm -rf $(OBJ_DIR)/*.o $(BIN_DIR)/cliente $(BIN_DIR)/servidor
