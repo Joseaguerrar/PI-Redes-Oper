@@ -22,9 +22,6 @@ Definir cómo un cliente puede ver y pedir figuras ASCII a través de un servido
 - Cliente manda:
 LIST
 
-diff
-Copiar
-Editar
 
 - Servidor principal responde algo como:
 OK
