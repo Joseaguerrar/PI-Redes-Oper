@@ -102,7 +102,7 @@ Consulta a servidor2 → FOUND
 
 **Servidor principal:**
 OK
-
+```
 
                   ~.
            Ya...___|__..aab     .   .
@@ -115,7 +115,7 @@ OK
    \ `---( O )( O )( O )( O )( O )-' /
     `.    `-'  `-'  `-'  `-'  `-'  .' CJ
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+```
 ---
 
 ## 6. Observaciones
