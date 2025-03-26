@@ -151,6 +151,20 @@ void SSLSocket::InitContext( bool serverContext ) {
  *
  **/
  void SSLSocket::LoadCertificates( const char * certFileName, const char * keyFileName ) {
+   SSL_CTX *ctx = reinterpret_cast<SSL_CTX *>(this->SSLContext);
+
+   if (SSL_CTX_use_certificate_file(ctx, certFileName, SSL_FILETYPE_PEM) <= 0) {
+      throw std::runtime_error("SSLSocket::LoadCertificates() - error cargando certificado");
+   }
+
+   if (SSL_CTX_use_PrivateKey_file(ctx, keyFileName, SSL_FILETYPE_PEM) <= 0) {
+      throw std::runtime_error("SSLSocket::LoadCertificates() - error cargando llave privada");
+   }
+
+   if (!SSL_CTX_check_private_key(ctx)) {
+      throw std::runtime_error("SSLSocket::LoadCertificates() - llave privada inválida");
+   }
+
 }
  
 
