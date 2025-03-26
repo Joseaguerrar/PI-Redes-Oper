@@ -2,27 +2,52 @@
 # Socket class with SSL
 #
 
+# Compiladores y flags
 CC  := gcc
 CXX := g++
 CFLAGS := -g -c
 CXXFLAGS := -g -c 
 LDFLAGS := -lssl -lcrypto
-DEPS := Socket.h
-TARGETS := ipv4-ssl-cli.out
 
-ALL := $(TARGETS)
-$(info $$TARGETS = $(TARGETS))
+# Carpetas
+OBJDIR := obj
+BINDIR := exec
 
-%.o: %.cc $(DEPS)
-	$(CXX) $(CXXFLAGS) $<
+# Archivos fuente
+SRCS := ipv4-ssl-cli.cc VSocket.cpp Socket.cpp SSLSocket.cpp
+OBJS := $(SRCS:.cpp=.o)
+OBJS := $(OBJS:.cc=.o)
+OBJS := $(addprefix $(OBJDIR)/, $(notdir $(OBJS)))
 
-%.out: %.o Socket.o
-	$(info $$^ = $^)
-	$(CXX) $^ Socket.o $(LDFLAGS) -o $^
+# Ejecutables
+TARGET := $(BINDIR)/ipv4-ssl-cli.out
 
-ipv4-ssl-cli.out: ipv4-ssl-cli.o VSocket.o Socket.o SSLSocket.o
-	$(CXX) ipv4-ssl-cli.o VSocket.o Socket.o SSLSocket.o $(LDFLAGS) -o $@
+# Regla por defecto
+all: $(TARGET)
 
+# Compilar y enlazar ejecutable
+$(TARGET): $(OBJS) | $(BINDIR)
+	$(CXX) $^ $(LDFLAGS) -o $@
+
+# Compilar cada archivo fuente en obj/
+$(OBJDIR)/%.o: %.cpp | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+$(OBJDIR)/%.o: %.cc | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+# Crear carpeta obj si no existe
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+# Crear carpeta exec si no existe
+$(BINDIR):
+	mkdir -p $(BINDIR)
+
+# Ejecutar el programa
+run: all
+	./$(TARGET)
+
+# Limpiar
 clean:
-	rm -f *.o *.out
-
+	rm -rf $(OBJDIR)/*.o $(BINDIR)/*.out
