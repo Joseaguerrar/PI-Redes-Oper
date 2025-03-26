@@ -179,11 +179,20 @@ void SSLSocket::InitContext( bool serverContext ) {
  *
  **/
 int SSLSocket::Connect( const char * hostName, int port ) {
-   int st;
+   int st = this->MakeConnection(hostName, port);  // Conexión sin SSL
+   if (st != 0) return st;
 
-   st = this->DoConnect( hostName, port );		// Establish a non ssl connection first
+   SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
+   SSL_set_fd(ssl, this->idSocket);
 
-   return st;
+   st = SSL_connect(ssl);
+   if (st != 1) {
+      int err = SSL_get_error(ssl, st);
+      fprintf(stderr, "SSL_connect failed with SSL error code: %d\n", err);
+      return -1;
+   }
+
+   return 0;
 
 }
 
