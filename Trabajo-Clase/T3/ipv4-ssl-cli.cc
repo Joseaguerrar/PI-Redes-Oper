@@ -34,7 +34,7 @@ int main( int argc, char * argv[] ) {
    }
 
    memset( a, 0 , MAXBUF );
-   client->Connect( os, port );
+   client->MakeConnection( os, port );
    client->Write(  (char * ) lego, strlen( lego ) );
    st = client->Read( a, MAXBUF );
    printf( "Bytes read %d\n%s\n", st, a);
