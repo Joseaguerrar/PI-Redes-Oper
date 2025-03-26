@@ -32,7 +32,8 @@
  **/
 SSLSocket::SSLSocket( bool IPv6 ) {
 
-   this->CreateVSocket( 's', IPv6 );
+   this->BuildSocket('s', IPv6);
+
 
    this->SSLContext = nullptr;
    this->SSLStruct = nullptr;
@@ -64,7 +65,8 @@ SSLSocket::SSLSocket( char * certFileName, char * keyFileName, bool IPv6 ) {
  **/
 SSLSocket::SSLSocket( int id ) {
 
-   this->CreateVSocket( id );
+   this->idSocket = id;
+
 
 }
 
@@ -178,7 +180,7 @@ void SSLSocket::InitContext( bool serverContext ) {
  *  @param	int port, service number
  *
  **/
-int SSLSocket::Connect( const char * hostName, int port ) {
+int SSLSocket::MakeConnection( const char * hostName, int port ) {
    int st = this->MakeConnection(hostName, port);  // Conexión sin SSL
    if (st != 0) return st;
 
@@ -207,7 +209,7 @@ int SSLSocket::Connect( const char * hostName, int port ) {
  *  @param	char * service, service name
  *
  **/
-int SSLSocket::Connect( const char * host, const char * service ) {
+int SSLSocket::MakeConnection( const char * host, const char * service ) {
    int st = this->MakeConnection(host, service);  // Conexión TCP normal
    if (st != 0) return st;
 
@@ -239,13 +241,15 @@ int SSLSocket::Connect( const char * host, const char * service ) {
   *
  **/
 size_t SSLSocket::Read( void * buffer, size_t size ) {
-   int st = -1;
+   SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
+   int st = SSL_read(ssl, buffer, static_cast<int>(size));
 
-   if ( -1 == st ) {
-      throw std::runtime_error( "SSLSocket::Read( void *, size_t )" );
+   if (st <= 0) {
+      int err = SSL_get_error(ssl, st);
+      throw std::runtime_error("SSLSocket::Read() - Error de lectura SSL, código: " + std::to_string(err));
    }
 
-   return st;
+   return static_cast<size_t>(st);
 
 }
 
@@ -263,14 +267,7 @@ size_t SSLSocket::Read( void * buffer, size_t size ) {
   *
  **/
 size_t SSLSocket::Write( const char * string ) {
-   int st = -1;
-
-   if ( -1 == st ) {
-      throw std::runtime_error( "SSLSocket::Write( const char * )" );
-   }
-
-   return st;
-
+   return this->Write(static_cast<const void *>(string), strlen(string));
 }
 
 
@@ -287,13 +284,15 @@ size_t SSLSocket::Write( const char * string ) {
   *
  **/
 size_t SSLSocket::Write( const void * buffer, size_t size ) {
-   int st = -1;
+   SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
+   int st = SSL_write(ssl, buffer, static_cast<int>(size));
 
-   if ( -1 == st ) {
-      throw std::runtime_error( "SSLSocket::Write( void *, size_t )" );
+   if (st <= 0) {
+      int err = SSL_get_error(ssl, st);
+      throw std::runtime_error("SSLSocket::Write(void *, size_t) - Error de escritura SSL, código: " + std::to_string(err));
    }
 
-   return st;
+   return static_cast<size_t>(st);
 
 }
 
