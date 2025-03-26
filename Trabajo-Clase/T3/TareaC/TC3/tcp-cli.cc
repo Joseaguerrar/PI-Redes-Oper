@@ -17,64 +17,52 @@
  #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <net/if.h>  // para if_nametoindex
 
 #include "VSocket.h"
 #include "Socket.h"
 #include "SSLSocket.h"
 
-int main( int argc, char * argv[] ) {
-   const char * whalev6 = "fe80::8f5a:e2e1:7256:ffe3%enp0s31f6";
-   const char * whalev4 = "10.1.35.1";
-   const char * request = "GET /aArt/index.php?disk=Disk-01&fig=whale-1.txt" HTTP/1.1\r\nhost: redes.ecci\r\n\r\n;
+#define MAXBUF 1024
+#define PORT 1234
+
+int main(int argc, char *argv[]) {
+   const char * whalev6 = "fe80::215:5dff:feb9:6c72";//%enp0s31f6";  // Dirección IPv6 del servidor
+   const char * interface = "eth0";
+   char buffer[MAXBUF];
    VSocket * client;
-   char a[512];
-   int ipVer = 4;	// 4 = IPv4, 6 = IPv6
-   int ssl = 0;		// 0 = non SSL, 1 = SSL
+   struct sockaddr_in6 server_addr;
+   const char * message = "Mensaje desde el cliente UDP";
 
-   memset( a, 0, 512 );	// Only first data part, must iterate to complete requested figure
+   memset(buffer, 0, MAXBUF);
 
-   if ( argc > 2 ) {
-      ipVer = atoi( argv[ 1 ] );
-      ssl = atoi( argv[ 2 ] );
-   } else {
-      if ( argc > 1 ) {
-         ipVer = atoi( argv[ 1 ] );
-      }
+   client = new Socket('d', true);  // Crear socket UDP IPv6
+
+   // Configurar la dirección del servidor
+   memset(&server_addr, 0, sizeof(server_addr));
+   server_addr.sin6_family = AF_INET6;
+   server_addr.sin6_port = htons(PORT);
+   
+   if (inet_pton(AF_INET6, whalev6, &server_addr.sin6_addr) <= 0) {
+      perror("inet_pton");
+      exit(EXIT_FAILURE);
    }
-
-   if ( ipVer != 6 ) {
-      ipVer = 4;
+   server_addr.sin6_scope_id = if_nametoindex(interface);
+   if (server_addr.sin6_scope_id == 0) {
+       perror("if_nametoindex");
+       exit(EXIT_FAILURE);
    }
-   if ( ssl != 1 ) {
-      ssl = 0;
-   }
+   // Enviar mensaje
+   client->sendTo((const void *)message, strlen(message), (void *)&server_addr);
+   printf("Mensaje enviado al servidor.\n");
 
-   if ( ssl ) {
-      printf( "Connecting SSL" );
-      if ( 4 == ipVer ) {
-         client = new SSLSocket();			// Create an IPv4 TCP SSL socket
-         client->MakeConnection( "os.ecci.ucr.ac.cr", "https" );
-         printf( " IPv4\n" );
-      } else {
-         client = new SSLSocket( true );	// Create an IPv6 TCP SSL socket
-         client->MakeConnection( whalev6, "https" );
-         printf( " IPv6\n" );
-      }
-   } else {							// Non SSL socket
-      printf( "Connecting non-SSL" );
-      if ( 4 == ipVer ) {
-         client = new Socket( 's' );		// Create an IPv4 TCP socket
-         client->MakeConnection( whalev4, 80 );
-         printf( " IPv4\n" );
-      } else {
-         client = new Socket( 's', true );	// Create an IPv6 TCP socket
-         client->MakeConnection( whalev6, "http" );
-         printf( " IPv6\n" );
-      }
-   }
+   // Recibir respuesta
+   client->recvFrom((void *)buffer, MAXBUF, (void *)&server_addr);
+   printf("Respuesta del servidor: %s\n", buffer);
 
-   client->Write(  request );
-   client->Read( a, 511 );
-   printf( "%s\n", a);
-
+   client->Close();
+   return 0;
 }
