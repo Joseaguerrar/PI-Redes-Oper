@@ -62,3 +62,5 @@ En la terminal del cliente:
 
 Mensaje enviado al servidor.
 Respuesta del servidor: Hello from CI0123 server
+
+Para ejecutar la prueba debe mover ambos el servidor y cliente a la carpeta de T3 en general para que funcione con el makefile.
