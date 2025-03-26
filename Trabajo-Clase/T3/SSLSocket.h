@@ -24,8 +24,8 @@ class SSLSocket : public VSocket {
       SSLSocket( char *, char *, bool = false );		// For server connections
       SSLSocket( int );
       ~SSLSocket();
-      int Connect( const char *, int );
-      int Connect( const char *, const char * );
+      int MakeConnection( const char *, int );
+      int MakeConnection( const char *, const char * );
       size_t Write( const char * );
       size_t Write( const void *, size_t );
       size_t Read( void *, size_t );
