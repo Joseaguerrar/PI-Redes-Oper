@@ -88,13 +88,14 @@ int Socket::MakeConnection( const char *host, const char *service ) {
  **/
 size_t Socket::Read( void * buffer, size_t size ) {
 
-   int st = -1;
+   ssize_t st = read(this->idSocket, buffer, size);
 
-   if ( -1 == st ) {
-      throw std::runtime_error( "Socket::Read( void *, size_t )" );
+   if (st == -1) {
+      perror("Socket::Read");
+      throw std::runtime_error("Socket::Read( void *, size_t )");
    }
 
-   return st;
+   return static_cast<size_t>(st);
 
 }
 
@@ -109,14 +110,14 @@ size_t Socket::Read( void * buffer, size_t size ) {
  **/
 size_t Socket::Write( const void * buffer, size_t size ) {
 
-   int st = -1;
+   ssize_t st = write(this->idSocket, buffer, size);
 
-   if ( -1 == st ) {
-      throw std::runtime_error( "Socket::Write( void *, size_t )" );
+   if (st == -1) {
+      perror("Socket::Write");
+      throw std::runtime_error("Socket::Write( void *, size_t )");
    }
 
-   return st;
-
+   return static_cast<size_t>(st);
 }
 
 
