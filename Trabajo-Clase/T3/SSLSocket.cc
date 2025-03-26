@@ -208,11 +208,20 @@ int SSLSocket::Connect( const char * hostName, int port ) {
  *
  **/
 int SSLSocket::Connect( const char * host, const char * service ) {
-   int st;
+   int st = this->MakeConnection(host, service);  // Conexión TCP normal
+   if (st != 0) return st;
 
-   st = this->MakeConnection( host, service );
+   SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
+   SSL_set_fd(ssl, this->idSocket);
 
-   return st;
+   st = SSL_connect(ssl);
+   if (st != 1) {
+      int err = SSL_get_error(ssl, st);
+      fprintf(stderr, "SSL_connect failed with SSL error code: %d\n", err);
+      return -1;
+   }
+
+   return 0;
 
 }
 
