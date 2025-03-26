@@ -96,9 +96,14 @@ SSLSocket::~SSLSocket() {
   *
  **/
 void SSLSocket::Init( bool serverContext ) {
-   SSL * ssl = nullptr;
+   this->InitContext(serverContext);
 
-   this->InitContext( serverContext );
+   SSL *ssl = SSL_new(reinterpret_cast<SSL_CTX *>(this->SSLContext));
+   if (nullptr == ssl) {
+      throw std::runtime_error("SSLSocket::Init() - Error al crear SSL_new");
+   }
+
+   this->SSLStruct = reinterpret_cast<void *>(ssl);
 
 }
 
@@ -111,16 +116,28 @@ void SSLSocket::Init( bool serverContext ) {
   *
  **/
 void SSLSocket::InitContext( bool serverContext ) {
-   const SSL_METHOD * method;
-   SSL_CTX * context;
+   const SSL_METHOD *method = nullptr;
+   SSL_CTX *context = nullptr;
 
-   if ( serverContext ) {
+   OpenSSL_add_all_algorithms();
+   SSL_load_error_strings();
+
+   if (serverContext) {
+      method = TLS_server_method();
    } else {
+      method = TLS_client_method();
    }
 
-   if ( nullptr == method ) {
-      throw std::runtime_error( "SSLSocket::InitContext( bool )" );
+   if (nullptr == method) {
+      throw std::runtime_error("SSLSocket::InitContext() - método TLS inválido");
    }
+
+   context = SSL_CTX_new(method);
+   if (nullptr == context) {
+      throw std::runtime_error("SSLSocket::InitContext() - error al crear contexto SSL");
+   }
+
+   this->SSLContext = reinterpret_cast<void *>(context);
 
 }
 
