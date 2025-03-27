@@ -85,7 +85,7 @@ FOUND <figura>
 - Si **no la tiene**:
 NOTFOUND
 
-### Entre proceso hijo y servidor principal (vía pipe, archivo, etc.):
+### Entre proceso hijo y servidor principal:
 
 - Envía lo que encontró o una señal de error.
 
