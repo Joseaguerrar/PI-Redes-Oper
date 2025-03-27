@@ -100,6 +100,7 @@ GET BARCO
 
 **Hijo:**
 Consulta a servidor1 → NOTFOUND
+
 Consulta a servidor2 → FOUND
 
 **Servidor principal:**
