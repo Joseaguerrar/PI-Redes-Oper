@@ -49,8 +49,11 @@ GET GATO
 3. El proceso hijo va preguntando a cada servidor secundario, **uno por uno** (sin concurrencia momentaneamente).
 
 Ejemplo del flujo interno:
+
 Preguntar al servidor A → NOTFOUND
+
 Preguntar al servidor B → FOUND
+
 → devolver la figura al servidor principal
 
 4. El servidor principal recibe la respuesta del hijo y responde al cliente:
