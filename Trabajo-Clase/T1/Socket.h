@@ -16,6 +16,7 @@
  #ifndef Socket_h
  #define Socket_h
  #include "VSocket.h"
+#include <stddef.h>
  
  class Socket : public VSocket {
  
