@@ -181,7 +181,7 @@ void SSLSocket::InitContext( bool serverContext ) {
  *
  **/
 int SSLSocket::MakeConnection( const char * hostName, int port ) {
-   int st = this->MakeConnection(hostName, port);  // Conexión sin SSL
+   int st = VSocket::EstablishConnection(hostName, port); // Conexión sin SSL
    if (st != 0) return st;
 
    SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
@@ -210,7 +210,7 @@ int SSLSocket::MakeConnection( const char * hostName, int port ) {
  *
  **/
 int SSLSocket::MakeConnection( const char * host, const char * service ) {
-   int st = this->MakeConnection(host, service);  // Conexión TCP normal
+   int st = VSocket::EstablishConnection(host, service);// Conexión TCP normal
    if (st != 0) return st;
 
    SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
