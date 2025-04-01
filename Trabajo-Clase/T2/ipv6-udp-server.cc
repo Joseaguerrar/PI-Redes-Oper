@@ -24,27 +24,40 @@
 
 int main() { 
    VSocket * server;
-   int len, n; 
-   int sockfd;
-   struct sockaddr other;
+   int n; 
    char buffer[MAXLINE]; 
    char *hello = (char *) "Hello from CI0123 server"; 
-	
-   server = new Socket( 'd', true );
-   server->Bind( PORT );
 
-   memset( &other, 0, sizeof( other ) );
+   // Cambiar a false si se quiere usar IPv4
+   bool usarIPv6 = false;
 
-   n = server->recvFrom( (void *) buffer, MAXLINE, (void *) &other );	// Mensaje de los www servers
-   buffer[n] = '\0'; 
-   printf("Server: message received: %s\n", buffer);
-
-   server->sendTo( (const void *) hello, strlen( hello ), (void *) &other );
-   printf("Server: Hello message sent.\n"); 
+   if (!usarIPv6) {
+      struct sockaddr_in other;
+      server = new Socket('d', false);  // false → IPv4
+      server->Bind(PORT);
+   
+      memset(&other, 0, sizeof(other));
+      n = server->recvFrom((void *) buffer, MAXLINE, (void *) &other);
+      buffer[n] = '\0'; 
+      printf("Server (IPv4): message received: %s\n", buffer);
+   
+      server->sendTo((const void *) hello, strlen(hello), (void *) &other);
+      printf("Server (IPv4): Hello message sent.\n");
+   } else {
+      struct sockaddr_in6 other;
+      server = new Socket('d', true);  // true → IPv6
+      server->Bind(PORT);
+   
+      memset(&other, 0, sizeof(other));
+      n = server->recvFrom((void *) buffer, MAXLINE, (void *) &other);
+      buffer[n] = '\0'; 
+      printf("Server (IPv6): message received: %s\n", buffer);
+   
+      server->sendTo((const void *) hello, strlen(hello), (void *) &other);
+      printf("Server (IPv6): Hello message sent.\n");
+   }
 
    server->Close();
-   
    return 0;
-
-} 
+}
 
