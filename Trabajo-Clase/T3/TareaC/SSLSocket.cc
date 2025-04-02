@@ -1,0 +1,334 @@
+/**
+  *  Universidad de Costa Rica
+  *  ECCI
+  *  CI0123 Proyecto integrador de redes y sistemas operativos
+  *  2025-i
+  *  Grupos: 1 y 3
+  *
+  *  Socket class implementation
+  *
+  * (Fedora version)
+  *
+ **/
+ 
+// SSL includes
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
+#include <stdexcept>
+
+#include "SSLSocket.h"
+#include "Socket.h"
+
+/**
+  *  Class constructor
+  *     use base class
+  *
+  *  @param     char t: socket type to define
+  *     's' for stream
+  *     'd' for datagram
+  *  @param     bool ipv6: if we need a IPv6 socket
+  *
+ **/
+SSLSocket::SSLSocket( bool IPv6 ) {
+
+   this->BuildSocket('s', IPv6);
+
+
+   this->SSLContext = nullptr;
+   this->SSLStruct = nullptr;
+
+   this->Init();					// Initializes to client context
+
+}
+
+
+/**
+  *  Class constructor
+  *     use base class
+  *
+  *  @param     char t: socket type to define
+  *     's' for stream
+  *     'd' for datagram
+  *  @param     bool IPv6: if we need a IPv6 socket
+  *
+ **/
+SSLSocket::SSLSocket( char * certFileName, char * keyFileName, bool IPv6 ) {
+}
+
+
+/**
+  *  Class constructor
+  *
+  *  @param     int id: socket descriptor
+  *
+ **/
+SSLSocket::SSLSocket( int id ) {
+
+   this->idSocket = id;
+
+
+}
+
+
+/**
+  * Class destructor
+  *
+ **/
+SSLSocket::~SSLSocket() {
+
+// SSL destroy
+   if ( nullptr != this->SSLContext ) {
+      SSL_CTX_free( reinterpret_cast<SSL_CTX *>( this->SSLContext ) );
+   }
+   if ( nullptr != this->SSLStruct ) {
+      SSL_free( reinterpret_cast<SSL *>( this->SSLStruct ) );
+   }
+
+   this->Close();
+
+}
+
+
+/**
+  *  SSLInit
+  *     use SSL_new with a defined context
+  *
+  *  Create a SSL object
+  *
+ **/
+void SSLSocket::Init( bool serverContext ) {
+   this->InitContext(serverContext);
+
+   SSL *ssl = SSL_new(reinterpret_cast<SSL_CTX *>(this->SSLContext));
+   if (nullptr == ssl) {
+      throw std::runtime_error("SSLSocket::Init() - Error al crear SSL_new");
+   }
+
+   this->SSLStruct = reinterpret_cast<void *>(ssl);
+
+}
+
+
+/**
+  *  InitContext
+  *     use SSL_library_init, OpenSSL_add_all_algorithms, SSL_load_error_strings, TLS_server_method, SSL_CTX_new
+  *
+  *  Creates a new SSL server context to start encrypted comunications, this context is stored in class instance
+  *
+ **/
+void SSLSocket::InitContext( bool serverContext ) {
+   const SSL_METHOD *method = nullptr;
+   SSL_CTX *context = nullptr;
+
+   OpenSSL_add_all_algorithms();
+   SSL_load_error_strings();
+
+   if (serverContext) {
+      method = TLS_server_method();
+   } else {
+      method = TLS_client_method();
+   }
+
+   if (nullptr == method) {
+      throw std::runtime_error("SSLSocket::InitContext() - método TLS inválido");
+   }
+
+   context = SSL_CTX_new(method);
+   if (nullptr == context) {
+      throw std::runtime_error("SSLSocket::InitContext() - error al crear contexto SSL");
+   }
+
+   this->SSLContext = reinterpret_cast<void *>(context);
+
+}
+
+
+/**
+ *  Load certificates
+ *    verify and load certificates
+ *
+ *  @param	const char * certFileName, file containing certificate
+ *  @param	const char * keyFileName, file containing keys
+ *
+ **/
+ void SSLSocket::LoadCertificates( const char * certFileName, const char * keyFileName ) {
+   SSL_CTX *ctx = reinterpret_cast<SSL_CTX *>(this->SSLContext);
+
+   if (SSL_CTX_use_certificate_file(ctx, certFileName, SSL_FILETYPE_PEM) <= 0) {
+      throw std::runtime_error("SSLSocket::LoadCertificates() - error cargando certificado");
+   }
+
+   if (SSL_CTX_use_PrivateKey_file(ctx, keyFileName, SSL_FILETYPE_PEM) <= 0) {
+      throw std::runtime_error("SSLSocket::LoadCertificates() - error cargando llave privada");
+   }
+
+   if (!SSL_CTX_check_private_key(ctx)) {
+      throw std::runtime_error("SSLSocket::LoadCertificates() - llave privada inválida");
+   }
+
+}
+ 
+
+/**
+ *  Connect
+ *     use SSL_connect to establish a secure conection
+ *
+ *  Create a SSL connection
+ *
+ *  @param	char * hostName, host name
+ *  @param	int port, service number
+ *
+ **/
+int SSLSocket::MakeConnection( const char * hostName, int port ) {
+   int st = VSocket::EstablishConnection(hostName, port);  // Conexión sin SSL
+   if (st != 0) return st;
+
+   SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
+   SSL_set_fd(ssl, this->idSocket);
+
+   st = SSL_connect(ssl);
+   if (st != 1) {
+      int err = SSL_get_error(ssl, st);
+      fprintf(stderr, "SSL_connect failed with SSL error code: %d\n", err);
+      return -1;
+   }
+
+   return 0;
+
+}
+
+
+/**
+ *  Connect
+ *     use SSL_connect to establish a secure conection
+ *
+ *  Create a SSL connection
+ *
+ *  @param	char * hostName, host name
+ *  @param	char * service, service name
+ *
+ **/
+int SSLSocket::MakeConnection( const char * host, const char * service ) {
+   int st = VSocket::EstablishConnection(host, service);  // Conexión TCP normal
+   if (st != 0) return st;
+
+   SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
+   SSL_set_fd(ssl, this->idSocket);
+
+   st = SSL_connect(ssl);
+   if (st != 1) {
+      int err = SSL_get_error(ssl, st);
+      fprintf(stderr, "SSL_connect failed with SSL error code: %d\n", err);
+      return -1;
+   }
+
+   return 0;
+
+}
+
+
+/**
+  *  Read
+  *     use SSL_read to read data from an encrypted channel
+  *
+  *  @param	void * buffer to store data read
+  *  @param	size_t size, buffer's capacity
+  *
+  *  @return	size_t byte quantity read
+  *
+  *  Reads data from secure channel
+  *
+ **/
+size_t SSLSocket::Read( void * buffer, size_t size ) {
+   SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
+   int st = SSL_read(ssl, buffer, static_cast<int>(size));
+
+   if (st <= 0) {
+      int err = SSL_get_error(ssl, st);
+      throw std::runtime_error("SSLSocket::Read() - Error de lectura SSL, código: " + std::to_string(err));
+   }
+
+   return static_cast<size_t>(st);
+
+}
+
+
+/**
+  *  Write
+  *     use SSL_write to write data to an encrypted channel
+  *
+  *  @param	void * buffer to store data read
+  *  @param	size_t size, buffer's capacity
+  *
+  *  @return	size_t byte quantity written
+  *
+  *  Writes data to a secure channel
+  *
+ **/
+size_t SSLSocket::Write( const char * string ) {
+   return this->Write(static_cast<const void *>(string), strlen(string));
+}
+
+
+/**
+  *  Write
+  *     use SSL_write to write data to an encrypted channel
+  *
+  *  @param	void * buffer to store data read
+  *  @param	size_t size, buffer's capacity
+  *
+  *  @return	size_t byte quantity written
+  *
+  *  Reads data from secure channel
+  *
+ **/
+size_t SSLSocket::Write( const void * buffer, size_t size ) {
+   SSL *ssl = reinterpret_cast<SSL *>(this->SSLStruct);
+   int st = SSL_write(ssl, buffer, static_cast<int>(size));
+
+   if (st <= 0) {
+      int err = SSL_get_error(ssl, st);
+      throw std::runtime_error("SSLSocket::Write(void *, size_t) - Error de escritura SSL, código: " + std::to_string(err));
+   }
+
+   return static_cast<size_t>(st);
+
+}
+
+
+/**
+ *   Show SSL certificates
+ *
+ **/
+void SSLSocket::ShowCerts() {
+   X509 *cert;
+   char *line;
+
+   cert = SSL_get_peer_certificate( (SSL *) this->SSLStruct );		 // Get certificates (if available)
+   if ( nullptr != cert ) {
+      printf("Server certificates:\n");
+      line = X509_NAME_oneline( X509_get_subject_name( cert ), 0, 0 );
+      printf( "Subject: %s\n", line );
+      free( line );
+      line = X509_NAME_oneline( X509_get_issuer_name( cert ), 0, 0 );
+      printf( "Issuer: %s\n", line );
+      free( line );
+      X509_free( cert );
+   } else {
+      printf( "No certificates.\n" );
+   }
+
+}
+
+
+/**
+ *   Return the name of the currently used cipher
+ *
+ **/
+const char * SSLSocket::GetCipher() {
+
+   return SSL_get_cipher( reinterpret_cast<SSL *>( this->SSLStruct ) );
+
+}
+
