@@ -1,4 +1,4 @@
 *.out
 *.o
-/obj
-/exec
+*/obj
+*/exec
