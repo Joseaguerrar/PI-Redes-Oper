@@ -1,0 +1,78 @@
+CONFIGURACIÓN DE OpenVPN-EASY-RSA PKI
+# 1. Instalar Easy-RSA en Ubuntu
+sudo apt update
+sudo apt install easy-rsa
+
+# 2. Crear y preparar el entorno de trabajo
+mkdir ~/easy-rsa
+cp -r /usr/share/easy-rsa/* ~/easy-rsa/
+cd ~/easy-rsa
+
+# 3. Inicializar el entorno PKI
+./easyrsa init-pki
+
+# 4. Crear la Autoridad Certificadora (CA)
+./easyrsa build-ca
+# Cuando lo pida, usar como Common Name: CI0123 CA
+
+# 5. Generar la clave Diffie-Hellman
+./easyrsa gen-dh
+
+# 6. Generar certificado y clave para el servidor llamado "redes"
+./easyrsa build-server-full redes
+
+# 7. Generar certificado y clave para el cliente llamado "cliente1"
+./easyrsa build-client-full cliente1
+
+
+CONFIGURACIÓN DE HTTPS EN APACHE2 CON CERTIFICADO AUTOFIRMADO - localhost
+
+1. INSTALAR APACHE2 Y OPENSSL
+--------------------------------
+sudo apt update
+sudo apt install apache2 openssl
+
+2. GENERAR CERTIFICADO AUTOFIRMADO PARA "localhost"
+-----------------------------------------------------
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/apache-selfsigned.key \
+  -out /etc/ssl/certs/apache-selfsigned.crt
+
+Durante la generación, llenar los campos como desees.
+Asegúrate de que el Common Name (CN) sea: localhost
+
+3. CONFIGURAR EL SITIO SSL EN APACHE
+-------------------------------------
+Editar archivo de configuración SSL:
+
+sudo nano /etc/apache2/sites-available/default-ssl.conf
+
+Cambiar las líneas:
+
+SSLEngine on
+SSLCertificateFile /etc/ssl/certs/apache-selfsigned.crt
+SSLCertificateKeyFile /etc/ssl/private/apache-selfsigned.key
+
+Agregar (si no existe):
+ServerName localhost
+
+4. HABILITAR EL SITIO Y EL MÓDULO SSL
+--------------------------------------
+sudo a2enmod ssl
+sudo a2ensite default-ssl.conf
+sudo systemctl reload apache2
+
+5. PROBAR EN EL NAVEGADOR
+--------------------------
+Abrir: https://localhost
+
+Aceptar el riesgo del certificado autofirmado.
+
+6. VERIFICAR EL CERTIFICADO
+----------------------------
+Hacer clic en el candado 🔒 en el navegador a la izquierda de la URL y luego en "Ver certificado".
+
+Debe ver:
+- Common Name: localhost
+- Organización: UCR (o el valor que ingrese)
+- Vigencia: 1 año (o el tiempo que elija)
