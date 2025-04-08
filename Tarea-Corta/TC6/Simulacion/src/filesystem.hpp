@@ -22,7 +22,7 @@ public:
     FileSystem();
 
     // Carga desde filesystem.dat
-    void cargarFiguras(const std::string& ruta);
+    bool cargarFiguras(const std::string& ruta);
 
     //Muestra el contenido del root
     void imprimirTabla();
