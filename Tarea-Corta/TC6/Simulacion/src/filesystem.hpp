@@ -29,4 +29,6 @@ public:
 
     // Devuelve el contenido completo de una figura por nombre
     std::string obtenerContenido(const std::string& nombre);
+
+    void imprimirBloquesFiguras(const std::string& nombre);
 };
