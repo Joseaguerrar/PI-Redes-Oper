@@ -1,50 +1,68 @@
-# Definir el compilador
-CC = gcc
+# Variables
 CXX = g++
+CXXFLAGS = -Wall -std=c++17 -I./src
+OBJDIR = obj
+BINDIR = exec
+SRCDIR = src
+FIGDIR = figuras
 
-# Definir los flags que deseas usar
-CFLAGS = -Wall -Wextra -fopenmp
-CXXFLAGS = -Wall -Wextra -fopenmp
+# Archivos fuente
+BUILDER_SRC = $(SRCDIR)/builder.cpp
+MAIN_SRC = $(SRCDIR)/main.cpp $(SRCDIR)/filesystem.cpp
+HEADERS = $(SRCDIR)/filesystem.hpp
 
-# Definir los directorios de origen y salida
-SRC_DIR = src
-OBJ_DIR = build
-EXE_FILE = simulacion
+# Objetos
+BUILDER_OBJ = $(OBJDIR)/builder.o
+MAIN_OBJ = $(OBJDIR)/main.o $(OBJDIR)/filesystem.o
 
-# Encontrar todos los archivos fuente .c y .cpp en el directorio src
-SRC_C = $(wildcard $(SRC_DIR)/*.c)
-SRC_CPP = $(wildcard $(SRC_DIR)/*.cpp)
+# Ejecutables
+BUILDER_EXE = $(BINDIR)/builder
+MAIN_EXE = $(BINDIR)/simulador
 
-# Generar los archivos objeto correspondientes en el directorio build
-OBJ_C = $(SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-OBJ_CPP = $(SRC_CPP:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+# Archivo generado
+DAT_FILE = filesystem.dat
 
-# Combinar todos los archivos objeto
-OBJ = $(OBJ_C) $(OBJ_CPP)
+# Objetivo por defecto: compila builder, ejecuta builder y compila simulador
+all: $(DAT_FILE) $(MAIN_EXE)
 
-# Regla por defecto (compilar todo)
-all: $(EXE_FILE)
+# Crear carpetas necesarias
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
-# Regla para compilar el ejecutable
-$(EXE_FILE): $(OBJ)
-	$(CXX) $(OBJ) -o $@ $(CXXFLAGS)
+$(BINDIR):
+	mkdir -p $(BINDIR)
 
-# Regla para compilar los archivos .c
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
-	$(CC) -c $< -o $@ $(CFLAGS)
+# Compilar builder
+$(BUILDER_EXE): $(BUILDER_OBJ) | $(OBJDIR) $(BINDIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
-# Regla para compilar los archivos .cpp
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
-	$(CXX) -c $< -o $@ $(CXXFLAGS)
+$(OBJDIR)/builder.o: $(BUILDER_SRC) $(HEADERS) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Crear el directorio de objetos si no existe
-$(OBJ_DIR):
-	mkdir -p $(OBJ_DIR)
+# Ejecutar builder para generar filesystem.dat
+$(DAT_FILE): $(BUILDER_EXE) $(wildcard $(FIGDIR)/*.txt)
+	./$(BUILDER_EXE)
 
-# Limpiar los archivos generados
+# Compilar simulador
+$(MAIN_EXE): $(MAIN_OBJ) | $(OBJDIR) $(BINDIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+$(OBJDIR)/main.o: $(SRCDIR)/main.cpp $(HEADERS) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+$(OBJDIR)/filesystem.o: $(SRCDIR)/filesystem.cpp $(HEADERS) | $(OBJDIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Ejecutar el simulador
+run: $(MAIN_EXE)
+	./$(MAIN_EXE)
+
+# Ejecutar el builder con salida
+run-builder: $(BUILDER_EXE)
+	./$(BUILDER_EXE)
+
+# Limpiar todo
 clean:
-	rm -rf $(OBJ_DIR) $(EXE_FILE)
+	rm -rf $(OBJDIR) $(BINDIR) $(DAT_FILE)
 
-# Ejecutar el programa
-run: $(EXE_FILE)
-	./$(EXE_FILE)
+.PHONY: all clean run run builder
