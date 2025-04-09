@@ -4,26 +4,24 @@ CXXFLAGS = -Wall -std=c++17 -I./src
 OBJDIR = obj
 BINDIR = exec
 SRCDIR = src
-FIGDIR = figuras
 
 # Archivos fuente
-BUILDER_SRC = $(SRCDIR)/builder.cpp
-MAIN_SRC = $(SRCDIR)/main.cpp $(SRCDIR)/filesystem.cpp
+GEN_SRC = crear_filesystem.cpp
+SIM_SRC = $(SRCDIR)/main.cpp $(SRCDIR)/filesystem.cpp
 HEADERS = $(SRCDIR)/filesystem.hpp
 
 # Objetos
-BUILDER_OBJ = $(OBJDIR)/builder.o
-MAIN_OBJ = $(OBJDIR)/main.o $(OBJDIR)/filesystem.o
+SIM_OBJS = $(OBJDIR)/main.o $(OBJDIR)/filesystem.o
 
 # Ejecutables
-BUILDER_EXE = $(BINDIR)/builder
-MAIN_EXE = $(BINDIR)/simulador
+GEN_EXE = $(BINDIR)/crear_filesystem
+SIM_EXE = $(BINDIR)/simulador
 
-# Archivo generado
+# Archivo de datos
 DAT_FILE = filesystem.dat
 
-# Objetivo por defecto: compila builder, ejecuta builder y compila simulador
-all: $(DAT_FILE) $(MAIN_EXE)
+# Objetivo por defecto
+all: $(GEN_EXE) $(DAT_FILE) $(SIM_EXE)
 
 # Crear carpetas necesarias
 $(OBJDIR):
@@ -32,19 +30,16 @@ $(OBJDIR):
 $(BINDIR):
 	mkdir -p $(BINDIR)
 
-# Compilar builder
-$(BUILDER_EXE): $(BUILDER_OBJ) | $(OBJDIR) $(BINDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+# Ejecutable del generador
+$(GEN_EXE): $(GEN_SRC) | $(BINDIR)
+	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(OBJDIR)/builder.o: $(BUILDER_SRC) $(HEADERS) | $(OBJDIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+# Generar filesystem.dat
+$(DAT_FILE): $(GEN_EXE)
+	./$(GEN_EXE)
 
-# Ejecutar builder para generar filesystem.dat
-$(DAT_FILE): $(BUILDER_EXE) $(wildcard $(FIGDIR)/*.txt)
-	./$(BUILDER_EXE)
-
-# Compilar simulador
-$(MAIN_EXE): $(MAIN_OBJ) | $(OBJDIR) $(BINDIR)
+# Ejecutable del simulador
+$(SIM_EXE): $(SIM_OBJS) | $(BINDIR)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(OBJDIR)/main.o: $(SRCDIR)/main.cpp $(HEADERS) | $(OBJDIR)
@@ -54,15 +49,15 @@ $(OBJDIR)/filesystem.o: $(SRCDIR)/filesystem.cpp $(HEADERS) | $(OBJDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Ejecutar el simulador
-run: $(MAIN_EXE)
-	./$(MAIN_EXE)
+run: $(SIM_EXE)
+	./$(SIM_EXE)
 
-# Ejecutar el builder con salida
-run-builder: $(BUILDER_EXE)
-	./$(BUILDER_EXE)
+# Ejecutar solo el generador
+gen: $(GEN_EXE)
+	./$(GEN_EXE)
 
 # Limpiar todo
 clean:
 	rm -rf $(OBJDIR) $(BINDIR) $(DAT_FILE)
 
-.PHONY: all clean run run builder
+.PHONY: all run gen clean
