@@ -38,7 +38,6 @@ bool FileSystem::cargarFiguras(const std::string& ruta) {
         if (index >= MAX_BLOCKS) break;
     }
 
-    int bloques_utilizados = index;
     return true;
 }
 
@@ -73,3 +72,56 @@ void FileSystem::imprimirTabla() {
                   << " | Fin: " << a.id_fin << "\n";
     }
 }
+
+void FileSystem::imprimirBloquesFiguras(const std::string& nombre) {
+    for (const auto& a : archivos) {
+        if (nombre == a.nombre) {
+            std::cout << "== Bloques de la Figura: " << a.nombre << " ==\n";
+            uint16_t bloque_actual = a.id_inicio;
+            int contador = 0;
+
+            while (bloque_actual != 0 && bloque_actual < MAX_BLOCKS) {
+                char* bloque = storage[bloque_actual];
+
+                std::cout << "Bloque # " << bloque_actual << ":\n";
+
+                // Mostrar los primeros 20 bytes como texto legible
+                std::cout << "Texto crudo: ";
+                for (int i = 0; i < 20; ++i) {
+                    unsigned char c = static_cast<unsigned char>(bloque[i]);
+                    if (std::isprint(c))
+                        std::cout << c;
+                    else if (c == '\n')
+                        std::cout << "\\n";
+                    else if (c == '\t')
+                        std::cout << "\\t";
+                    else
+                        std::cout << '_';  // No imprimible
+                }
+                std::cout << "\n";
+
+                // Mostrar los mismos 20 bytes en hexadecimal
+                std::cout << "Hex: ";
+                for (int i = 0; i < 20; ++i) {
+                    printf("%02X ", static_cast<unsigned char>(bloque[i]));
+                }
+                std::cout << "\n";
+
+                // Mostrar los punteros al final del bloque
+                uint8_t lo = static_cast<uint8_t>(bloque[254]);
+                uint8_t hi = static_cast<uint8_t>(bloque[255]);
+                uint16_t next = lo | (hi << 8);
+                printf("Bytes crudos: %02X %02X\n", lo, hi);
+                std::cout << " siguiente bloque: " << next << "\n\n";
+
+                bloque_actual = next;
+
+                if (contador++ > 50) break; // Seguridad ante bucles infinitos
+            }
+            return;
+        }
+    }
+
+    std::cout << "[Figura no encontrada]: " << nombre << "\n";
+}
+
