@@ -38,11 +38,28 @@
   **/
  void VSocket::BuildSocket( char t, bool IPv6 ){
  
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "VSocket::BuildSocket, (reason)" );
-    }
+   int domain, type;
+
+   // Dominio: solo IPv4 por ahora
+   domain = AF_INET;
+
+   // Tipo: stream o datagram
+   switch ( t ) {
+       case 's': type = SOCK_STREAM; break;
+       case 'd': type = SOCK_DGRAM;  break;
+       default:
+           throw std::runtime_error( "VSocket::BuildSocket, invalid type" );
+   }
+
+   // Crear el socket
+   idSocket = socket( domain, type, 0 );
+   if ( idSocket == -1 ) {
+       throw std::runtime_error( "VSocket::BuildSocket, socket creation failed" );
+   }
+
+   // Guardar atributos
+   //this->IPv6 = ipv6;
+   this->type = t;
  
  }
  
@@ -64,11 +81,13 @@
    *
   **/
  void VSocket::Close(){
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "VSocket::Close()" );
-    }
+   if ( idSocket != -1 ) {
+      int st = close( idSocket );
+      if ( st == -1 ) {
+          throw std::runtime_error( "VSocket::Close(), close failed" );
+      }
+      idSocket = -1; // Marcar como cerrado
+  }
  
  }
  
@@ -83,13 +102,25 @@
   **/
  int VSocket::EstablishConnection( const char * hostip, int port ) {
  
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "VSocket::EstablishConnection" );
-    }
- 
-    return st;
+   struct sockaddr_in server_addr;
+   memset( &server_addr, 0, sizeof( server_addr ) );
+
+   server_addr.sin_family = AF_INET;
+   server_addr.sin_port = htons( port );
+
+   // Convertir IP en formato texto a binario
+   int st = inet_pton( AF_INET, hostip, &server_addr.sin_addr );
+   if ( st <= 0 ) {
+       throw std::runtime_error( "VSocket::EstablishConnection, invalid IP address" );
+   }
+
+   // Intentar conectarse al servidor
+   st = connect( idSocket, (struct sockaddr *) &server_addr, sizeof( server_addr ) );
+   if ( st == -1 ) {
+       throw std::runtime_error( "VSocket::EstablishConnection, connect failed" );
+   }
+
+   return st;
  
  }
  
@@ -103,11 +134,26 @@
    *
   **/
  int VSocket::EstablishConnection( const char *host, const char *service ) {
-    int st = -1;
- 
-    throw std::runtime_error( "VSocket::EstablishConnection" );
- 
-    return st;
+   struct addrinfo hints, *res;
+   memset( &hints, 0, sizeof( hints ) );
+
+   hints.ai_family = AF_INET;        // IPv4
+   hints.ai_socktype = ( this->type == 's' ) ? SOCK_STREAM : SOCK_DGRAM;  // Stream o Datagram
+
+   int st = getaddrinfo( host, service, &hints, &res );
+   if ( st != 0 ) {
+       throw std::runtime_error( "VSocket::EstablishConnection, getaddrinfo failed" );
+   }
+
+   // Intentar conectarse
+   st = connect( idSocket, res->ai_addr, res->ai_addrlen );
+   freeaddrinfo( res );  // Liberar la memoria
+
+   if ( st == -1 ) {
+       throw std::runtime_error( "VSocket::EstablishConnection, connect failed" );
+   }
+
+   return st;
  
  }
  
@@ -122,11 +168,21 @@
    *
   **/
  int VSocket::Bind( int port ) {
-    int st = -1;
- 
-    throw std::runtime_error( "VSocket::Bind2025" );
- 
-    return st;
+   struct sockaddr_in server_addr;
+   memset( &server_addr, 0, sizeof( server_addr ) );
+
+   server_addr.sin_family = AF_INET;
+   server_addr.sin_addr.s_addr = htonl( INADDR_ANY );  // Aceptar conexiones desde cualquier dirección
+   server_addr.sin_port = htons( port );               // Puerto del servidor
+
+   int st = bind( idSocket, (struct sockaddr *) &server_addr, sizeof( server_addr ) );
+   if ( st == -1 ) {
+       throw std::runtime_error( "VSocket::Bind, bind failed" );
+   }
+
+   this->port = port;  // Guardar el puerto en el atributo
+
+   return st;
  
  }
  
@@ -140,12 +196,12 @@
    *  Establish socket queue length
    *
   **/
- int VSocket::MarkPassive( int backlog ) {
-    int st = -1;
- 
-    throw std::runtime_error( "VSocket::MarkPassive" );
- 
-    return st;
+ int VSocket::MarkPassive( int backlog ) { //Listen...
+   int st = listen( idSocket, backlog );
+   if ( st == -1 ) {
+       throw std::runtime_error( "VSocket::MarkPassive, listen failed" );
+   }
+   return st;
  
  }
  
