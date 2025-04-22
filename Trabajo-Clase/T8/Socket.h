@@ -14,8 +14,6 @@
  #ifndef Socket_h
  #define Socket_h
  #include "VSocket.h"
-
- #include <cstddef>
  
  class Socket : public VSocket {
  
@@ -29,9 +27,6 @@
        size_t Write( const char * );
  
        VSocket * AcceptConnection();
-
-       //Nuevos
-       VSocket * CreateVSocket(int) override;
  
     protected:
  

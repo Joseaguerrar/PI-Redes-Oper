@@ -19,7 +19,6 @@
  #include <stdio.h>		// printf
  
  #include "Socket.h"		// Derived class
- #include "VSocket.h"		// Base class
  
  /**
    *  Class constructor
@@ -89,11 +88,13 @@
   **/
  size_t Socket::Read( void * buffer, size_t size ) {
  
-    ssize_t bytesRead = read( this->idSocket, buffer, size );
-    if ( bytesRead == -1 ) {
-       throw std::runtime_error( "Socket::Read( void *, size_t ), error al leer socket" );
+    int st = -1;
+ 
+    if ( -1 == st ) {
+       throw std::runtime_error( "Socket::Read( void *, size_t )" );
     }
-    return static_cast<size_t>( bytesRead );
+ 
+    return st;
  
  }
  
@@ -108,11 +109,13 @@
   **/
  size_t Socket::Write( const void * buffer, size_t size ) {
  
-    ssize_t bytesWritten = write( this->idSocket, buffer, size );
-    if ( bytesWritten == -1 ) {
-       throw std::runtime_error( "Socket::Write( void *, size_t ), error al escribir socket" );
+    int st = -1;
+ 
+    if ( -1 == st ) {
+       throw std::runtime_error( "Socket::Write( void *, size_t )" );
     }
-    return static_cast<size_t>( bytesWritten );
+ 
+    return st;
  
  }
  
@@ -125,30 +128,35 @@
    *
   **/
  size_t Socket::Write( const char * text ) {
-   return this->Write( static_cast<const void *>( text ), strlen( text ) );
+ 
+    int st = -1;
+ 
+    if ( -1 == st ) {
+       throw std::runtime_error( "Socket::Write( char * )" );
+    }
+ 
+    return st;
+ 
  }
-
+ 
+ 
  /**
-  * AcceptiConnection method
-  *    use base class to accept connections
-  *
-  *  @returns   a new class instance
-  *
-  *  Waits for a new connection to service (TCP mode: stream)
-  *
- **/
-VSocket * Socket::AcceptConnection(){
-   int id;
-   VSocket * peer;
-
-   id = this->WaitForConnection();
-
-   peer = new Socket( id );
-
-   return peer;
-
-}
-
-VSocket * Socket::CreateVSocket(int fd){
-   return new Socket(fd);
-}
+   * AcceptiConnection method
+   *    use base class to accept connections
+   *
+   *  @returns   a new class instance
+   *
+   *  Waits for a new connection to service (TCP mode: stream)
+   *
+  **/
+ VSocket * Socket::AcceptConnection(){
+    int id;
+    VSocket * peer;
+ 
+    id = this->WaitForConnection();
+ 
+    peer = new Socket( id );
+ 
+    return peer;
+ 
+ }
