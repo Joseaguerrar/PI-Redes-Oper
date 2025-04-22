@@ -106,25 +106,55 @@
  int VSocket::EstablishConnection( const char * hostip, int port ) {
  
   if ( IPv6 ) {
-    struct sockaddr_in6 server_addr;
-    memset( &server_addr, 0, sizeof( server_addr ) );
+    // Verificar si la IP tiene '%' (link-local con interfaz)
+    const char * percent = strchr( hostip, '%' );
 
-    server_addr.sin6_family = AF_INET6;
-    server_addr.sin6_port = htons( port );
+    if ( percent != nullptr ) {
+       // Usar getaddrinfo para manejar %interface
+       struct addrinfo hints, *res;
+       memset( &hints, 0, sizeof( hints ) );
+       hints.ai_family = AF_INET6;
+       hints.ai_socktype = ( this->type == 's' ) ? SOCK_STREAM : SOCK_DGRAM;
 
-    int st = inet_pton( AF_INET6, hostip, &server_addr.sin6_addr );
-    if ( st <= 0 ) {
-        throw std::runtime_error( "VSocket::EstablishConnection (IPv6), invalid IP address" );
+       // Convertir puerto a string
+       char port_str[16];
+       snprintf( port_str, sizeof( port_str ), "%d", port );
+
+       int st = getaddrinfo( hostip, port_str, &hints, &res );
+       if ( st != 0 ) {
+           throw std::runtime_error( "VSocket::EstablishConnection (IPv6 link-local), getaddrinfo failed" );
+       }
+
+       st = connect( idSocket, res->ai_addr, res->ai_addrlen );
+       freeaddrinfo( res );
+       if ( st == -1 ) {
+           throw std::runtime_error( "VSocket::EstablishConnection (IPv6 link-local), connect failed" );
+       }
+
+       return st;
+
+    } else {
+       // Caso normal sin %
+       struct sockaddr_in6 server_addr;
+       memset( &server_addr, 0, sizeof( server_addr ) );
+
+       server_addr.sin6_family = AF_INET6;
+       server_addr.sin6_port = htons( port );
+
+       int st = inet_pton( AF_INET6, hostip, &server_addr.sin6_addr );
+       if ( st <= 0 ) {
+           throw std::runtime_error( "VSocket::EstablishConnection (IPv6), invalid IP address" );
+       }
+
+       st = connect( idSocket, (struct sockaddr *) &server_addr, sizeof( server_addr ) );
+       if ( st == -1 ) {
+           throw std::runtime_error( "VSocket::EstablishConnection (IPv6), connect failed" );
+       }
+
+       return st;
     }
-
-    st = connect( idSocket, (struct sockaddr *) &server_addr, sizeof( server_addr ) );
-    if ( st == -1 ) {
-        throw std::runtime_error( "VSocket::EstablishConnection (IPv6), connect failed" );
-    }
-
-    return st;
-
- } else {  // IPv4
+ } else {
+    // IPv4
     struct sockaddr_in server_addr;
     memset( &server_addr, 0, sizeof( server_addr ) );
 
