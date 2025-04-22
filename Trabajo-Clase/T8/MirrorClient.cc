@@ -23,7 +23,7 @@
     s = new Socket( 's' );     // Creaite a new stream IPv4 socket
     memset( buffer, 0, BUFSIZE );	// Zero fill buffer
  
-    s->MakeConnection( "use your PC IP address in dot decimal format", PORT ); // Same port as server
+    s->MakeConnection( "172.18.11.204", PORT ); // Same port as server, y mi dirección ip de red local, se puede probar la loopback 127.0.0.1
     if ( argc > 1 ) {
        s->Write( argv[1] );		// If provided, send first program argument to server
     } else {
