@@ -28,7 +28,7 @@
     int childpid;
     char a[ BUFSIZE ];
  
-    s1 = new Socket( 's' );		// Create a stream IPv4 socket
+    s1 = new Socket( 's', true );		// Create a stream IPv6 socket
  
     s1->Bind( PORT );			// Port to access this mirror server
     s1->MarkPassive( 5 );		// Set passive socket and backlog queue to 5 connections
