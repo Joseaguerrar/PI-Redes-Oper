@@ -265,4 +265,26 @@
  
  }
  
- 
+ /**
+ * Shutdown method
+ * @brief Cierra parcialmente el socket.
+ *
+ * Este método permite cerrar total o parcialmente la conexión
+ * en una comunicación full-duplex, usando el descriptor del socket actual.
+ *
+ * @param how Indica qué parte cerrar:
+ * - `SHUT_RD` (0): deshabilita más recepciones.
+ * - `SHUT_WR` (1): deshabilita más envíos.
+ * - `SHUT_RDWR` (2): deshabilita ambos.
+ * 
+ * @return 0 si fue exitoso.
+ * @throws std::runtime_error si ocurre un error en shutdown().
+ */
+int VSocket::Shutdown(int how) {
+    if (shutdown(this->idSocket, how) == -1) {
+        perror("Shutdown()");
+        throw std::runtime_error("VSocket::Shutdown(), error en shutdown()");
+    }
+    return 0;
+}
+  
