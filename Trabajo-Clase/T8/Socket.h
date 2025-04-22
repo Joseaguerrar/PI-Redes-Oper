@@ -19,6 +19,7 @@
  
     public:
        Socket( char, bool = false );
+       Socket( int ); // Constructor adicional para aceptar un descriptor
        ~Socket();
        int MakeConnection( const char *, int );
        int MakeConnection( const char *, const char * );
