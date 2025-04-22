@@ -36,6 +36,12 @@
  
  }
  
+ // Constructor adicional para aceptar un descriptor
+ Socket::Socket( int id ) {
+    this->idSocket = id;
+    this->IPv6 = false;  // Solo manejamos IPv4 por ahora
+    this->type = 's';    // Es stream
+ }
  
  /**
    *  Class destructor
@@ -88,13 +94,11 @@
   **/
  size_t Socket::Read( void * buffer, size_t size ) {
  
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "Socket::Read( void *, size_t )" );
-    }
- 
-    return st;
+   ssize_t st = read( idSocket, buffer, size );
+   if ( st == -1 ) {
+       throw std::runtime_error( "Socket::Read, read failed" );
+   }
+   return st;
  
  }
  
@@ -109,13 +113,11 @@
   **/
  size_t Socket::Write( const void * buffer, size_t size ) {
  
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "Socket::Write( void *, size_t )" );
-    }
- 
-    return st;
+   ssize_t st = write( idSocket, buffer, size );
+   if ( st == -1 ) {
+       throw std::runtime_error( "Socket::Write (buffer), write failed" );
+   }
+   return st;
  
  }
  
@@ -129,13 +131,7 @@
   **/
  size_t Socket::Write( const char * text ) {
  
-    int st = -1;
- 
-    if ( -1 == st ) {
-       throw std::runtime_error( "Socket::Write( char * )" );
-    }
- 
-    return st;
+   return this->Write( text, strlen( text ) + 1 );  // +1 para incluir el '\0'
  
  }
  
@@ -150,13 +146,7 @@
    *
   **/
  VSocket * Socket::AcceptConnection(){
-    int id;
-    VSocket * peer;
- 
-    id = this->WaitForConnection();
- 
-    peer = new Socket( id );
- 
-    return peer;
- 
- }
+   int id = this->WaitForConnection();
+   VSocket * peer = new Socket( id );  // Aquí se crea el nuevo socket
+   return peer;
+}
