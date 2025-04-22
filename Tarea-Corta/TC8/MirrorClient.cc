@@ -20,10 +20,10 @@
     VSocket * s;
     char buffer[ BUFSIZE ];
  
-    s = new Socket( 's' );     // Creaite a new stream IPv4 socket
+    s = new Socket( 's', true );     // Creaite a new stream IPv6 socket
     memset( buffer, 0, BUFSIZE );	// Zero fill buffer
  
-    s->MakeConnection( "172.18.11.204", PORT ); // Same port as server, y mi dirección ip de red local, se puede probar la loopback 127.0.0.1
+    s->MakeConnection( "fe80::215:5dff:fefd:80e9%eth0", PORT ); // Same port as server, en este caso mi dirección, también se puede loopback (igual que 127.0.0.1 pero para IPv6 sería: "::1")
     if ( argc > 1 ) {
        s->Write( argv[1] );		// If provided, send first program argument to server
     } else {
