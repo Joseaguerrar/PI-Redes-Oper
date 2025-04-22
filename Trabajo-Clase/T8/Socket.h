@@ -29,6 +29,9 @@
        size_t Write( const char * );
  
        VSocket * AcceptConnection();
+
+       //Nuevos
+       VSocket * CreateVSocket(int) override;
  
     protected:
  

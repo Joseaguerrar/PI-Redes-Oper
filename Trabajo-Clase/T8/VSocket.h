@@ -38,6 +38,8 @@ class VSocket {
        int Shutdown( int );		// cause all or part of a full-duplex connection on the socket
                                          // associated with the file descriptor socket to be shut down
  
+       //Nuevos métodos                               
+       virtual VSocket * CreateVSocket(int) = 0;
  // UDP methods
        size_t sendTo( const void *, size_t, void * );
        size_t recvFrom( void *, size_t, void * );

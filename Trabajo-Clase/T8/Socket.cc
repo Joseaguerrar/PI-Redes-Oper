@@ -148,3 +148,7 @@ VSocket * Socket::AcceptConnection(){
    return peer;
 
 }
+
+VSocket * Socket::CreateVSocket(int fd){
+   return new Socket(fd);
+}
