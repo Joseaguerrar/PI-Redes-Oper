@@ -215,11 +215,15 @@
    *
   **/
  int VSocket::WaitForConnection( void ) {
-    int st = -1;
- 
-    throw std::runtime_error( "VSocket::WaitForConnection" );
- 
-    return st;
+   struct sockaddr_in client_addr;
+   socklen_t addr_len = sizeof( client_addr );
+
+   int client_fd = accept( idSocket, (struct sockaddr *) &client_addr, &addr_len );
+   if ( client_fd == -1 ) {
+       throw std::runtime_error( "VSocket::WaitForConnection, accept failed" );
+   }
+
+   return client_fd;
  
  }
  
@@ -233,11 +237,11 @@
    *
   **/
  int VSocket::Shutdown( int mode ) {
-    int st = -1;
- 
-    throw std::runtime_error( "VSocket::Shutdown" );
- 
-    return st;
+   int st = shutdown( idSocket, mode );
+   if ( st == -1 ) {
+       throw std::runtime_error( "VSocket::Shutdown, shutdown failed" );
+   }
+   return st;
  
  }
  
@@ -255,9 +259,11 @@
    *
   **/
  size_t VSocket::sendTo( const void * buffer, size_t size, void * addr ) {
-    int st = -1;
- 
-    return st;
+   ssize_t st = sendto( idSocket, buffer, size, 0, (struct sockaddr *) addr, sizeof( struct sockaddr_in ) );
+   if ( st == -1 ) {
+       throw std::runtime_error( "VSocket::sendTo, sendto failed" );
+   }
+   return st;
  
  }
  
@@ -275,8 +281,11 @@
    *
   **/
  size_t VSocket::recvFrom( void * buffer, size_t size, void * addr ) {
-    int st = -1;
- 
-    return st;
+   socklen_t addr_len = sizeof( struct sockaddr_in );
+   ssize_t st = recvfrom( idSocket, buffer, size, 0, (struct sockaddr *) addr, &addr_len );
+   if ( st == -1 ) {
+       throw std::runtime_error( "VSocket::recvFrom, recvfrom failed" );
+   }
+   return st;
  
  }
