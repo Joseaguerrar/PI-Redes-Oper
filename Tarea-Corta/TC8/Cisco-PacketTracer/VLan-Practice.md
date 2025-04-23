@@ -47,7 +47,7 @@
 -Configure a password of cisco for vty connections.
 
 **Your completion percentage should be 25%. If not, troubleshoot for any errors.**
-![25%](Images/25%.png)
+![25](Images/25.png)
 
 ```bash
 Switch>enable
@@ -96,7 +96,7 @@ From the Desktop tab, select IP Configuration to configure the Ethernet interfac
 **Note: The IP address for PC1 will score as incorrect for now. You will change the PC1 IP address later.**
 
 **Your completion percentage should be 51%. If not, troubleshoot for any errors.**
-![52%](Images/52%.png)
+![52](Images/52.png)
 
 ## Task 3: Configure VLANs on the Switch
 
@@ -487,4 +487,4 @@ Why was this attempt successful?
 
 **Your completion percentage should be 100%. If not, click Check Results to see which required components are not yet completed.**
 
-![100%](Images/100%.png)
+![100](Images/100.png)
