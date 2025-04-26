@@ -480,9 +480,11 @@ Approximate round trip times in milli-seconds:
 ```
 
 Is the ping attempt successful?
+
 **Sí, tras haber cambiado la IP**
 
 Why was this attempt successful?
+
 **El ping es exitoso porque PC1 y PC2 están ahora en la misma VLAN (20) y misma subred (172.17.20.0/24).**
 
 **Your completion percentage should be 100%. If not, click Check Results to see which required components are not yet completed.**
