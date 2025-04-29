@@ -1,5 +1,5 @@
 
-Read.Me 
+Read.Me
 
 [Modalidad: individual]
 
@@ -14,32 +14,34 @@ Funcionamiento
 
 Tareas
 
-   - Revisar la imagen con el detalle del protocolo SSL
+- Revisar la imagen con el detalle del protocolo SSL
 
-   - Revisar y comprender el ejemplo funcional provisto: SSLClient.c y SSLServer.c
-      - Requieren que exista un certificado almacenado en el archivo "ci0123.pem"
+- Revisar y comprender el ejemplo funcional provisto: SSLClient.c y SSLServer.c
+  - Requieren que exista un certificado almacenado en el archivo "ci0123.pem"
       (openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ci0123.pem -out ci0123.pem)
 
-      - Al compilar, deben agregar las bibliotecas para SSL (-lssl -lcrypto)
+  - Al compilar, deben agregar las bibliotecas para SSL (-lssl -lcrypto)
 
-   - Completar su clase "Socket" para poder intercambiar mensajes por medio de SSL
+- Completar su clase "Socket" para poder intercambiar mensajes por medio de SSL
 
      Para este trabajo deben completar, algunos de ellos ya pueden estar listos por trabajos anteriores:
 
-     (*** Advertencia: los métodos indicados son sugeridos, pueden realizar su propia implantación ***)
+     (***Advertencia: los métodos indicados son sugeridos, pueden realizar su propia implantación***)
 
         Socket::SSLInitContext() [privado], inicializa una variable de instancia con el método SSL_CTX_new, la que recibe como
            parámetro un método (SSL_method inicializado con TLS_client_method())
 
 /**
-  *  InitContext
-  *     use TLS_client_method and SSL_CTX_new
-  *
-  *  Creates a new SSL context to start encrypted comunications, this context is stored in class instance
-  *
+
+- InitContext
+-     use TLS_client_method and SSL_CTX_new
+-
+- Creates a new SSL context to start encrypted comunications, this context is stored in class instance
+-
+
  **/
 void SSLSocket::InitContext() {
-   
+
    // Create a SSL_METHOD * variable using TLS_client_method() call
    // Check for errors on a similar way as showed:
 ...
@@ -55,14 +57,14 @@ void SSLSocket::InitContext() {
 
    // Assign context to an instance variable
 
-
-
 /**
-  *  SSLSocket::Init
-  *     use SSL_new with a defined context
-  *
-  *  Create a SSL object
-  *
+
+- SSLSocket::Init
+-     use SSL_new with a defined context
+-
+- Create a SSL object
+-
+
  **/
 void SSLSocket::Init() {
 
@@ -74,32 +76,33 @@ void SSLSocket::Init() {
 
 }
 
-
 /**
- *  Load certificates
- *    verify and load certificates
- *
- *  @param	const char * certFileName, file containing certificate
- *  @param	const char * keyFileName, file containing keys
- *
+
+- Load certificates
+- verify and load certificates
+-
+- @param const char * certFileName, file containing certificate
+- @param const char * keyFileName, file containing keys
+-
+
  **/
-void SSLSocket::LoadCertificates( const char * certFileName, const char * keyFileName ) {
+void SSLSocket::LoadCertificates( const char *certFileName, const char* keyFileName ) {
    // SSL_CTX * context = instance variable
    int st;
 
-   if ( SSL_CTX_use_certificate_file( context, certFileName, SSL_FILETYPE_PEM ) <= 0 ) {	 // set the local certificate from CertFile
+   if ( SSL_CTX_use_certificate_file( context, certFileName, SSL_FILETYPE_PEM ) <= 0 ) {  // set the local certificate from CertFile
       st = SSL_get_error( (SSL *) this->SSLStruct, st );
       ERR_print_errors_fp( stderr );
       abort();
    }
 
-   if ( SSL_CTX_use_PrivateKey_file( context, keyFileName, SSL_FILETYPE_PEM ) <= 0 ) {	// set the private key from KeyFile (may be the same as CertFile)
+   if ( SSL_CTX_use_PrivateKey_file( context, keyFileName, SSL_FILETYPE_PEM ) <= 0 ) { // set the private key from KeyFile (may be the same as CertFile)
       st = SSL_get_error( (SSL *) this->SSLStruct, st );
       ERR_print_errors_fp( stderr );
       abort();
    }
 
-   if ( ! SSL_CTX_check_private_key( context ) ) {	// verify private key
+   if ( ! SSL_CTX_check_private_key( context ) ) { // verify private key
       st = SSL_get_error( (SSL *) this->SSLStruct, st );
       ERR_print_errors_fp( stderr );
       abort();
@@ -107,14 +110,14 @@ void SSLSocket::LoadCertificates( const char * certFileName, const char * keyFil
 
 }
 
-
-
 /**
-  *  InitServerContext
-  *     use SSL_library_init, OpenSSL_add_all_algorithms, SSL_load_error_strings, TLS_server_method, SSL_CTX_new
-  *
-  *  Creates a new SSL server context to start encrypted comunications, this context is stored in class instance
-  *
+
+- InitServerContext
+-     use SSL_library_init, OpenSSL_add_all_algorithms, SSL_load_error_strings, TLS_server_method, SSL_CTX_new
+-
+- Creates a new SSL server context to start encrypted comunications, this context is stored in class instance
+-
+
  **/
 void SSLSocket::InitServerContext() {
 
@@ -130,39 +133,40 @@ void SSLSocket::InitServerContext() {
 
 }
 
-
 /**
- *  InitServer
- *     use SSL_new with a defined context
- *
- *  Create a SSL object for server conections
- *
- *  @param	const char * certFileName, file containing certificate
- *  @param	const char * keyFileName, file containing keys
- *
+
+- InitServer
+-     use SSL_new with a defined context
+-
+- Create a SSL object for server conections
+-
+- @param const char * certFileName, file containing certificate
+- @param const char * keyFileName, file containing keys
+-
+
  **/
-void SSLSocket::InitServer( const char * certFileName, const char * keyFileName ) {
+void SSLSocket::InitServer( const char *certFileName, const char* keyFileName ) {
    int st;
 
    // Create a new context calling SSLInitServerContext
-   // Create a SSL * variable using SSL_new()
+   // Create a SSL *variable using SSL_new()
    // Check for errors
-   // Assing SSL * variable to an instance variable
+   // Assing SSL* variable to an instance variable
    // Load SSL certificates, using SSLLoadCertificates() method
 
 }
 
-
-
 /**
- *   Show SSL certificates
- *
+
+- Show SSL certificates
+-
+
  **/
 void SSLSocket::ShowCerts() {
    X509 *cert;
-   char *line;
+   char*line;
 
-   cert = SSL_get_peer_certificate( (SSL *) this->SSLStruct );		 // Get certificates (if available)
+   cert = SSL_get_peer_certificate( (SSL *) this->SSLStruct );   // Get certificates (if available)
    if ( nullptr != cert ) {
       printf("Server certificates:\n");
       line = X509_NAME_oneline( X509_get_subject_name( cert ), 0, 0 );
@@ -178,16 +182,16 @@ void SSLSocket::ShowCerts() {
 
 }
 
-
-
 /**
- *   Create constructs a new SSL * variable from a previous created context
- *
- *  @param	Socket * original socket with a previous created context
- *
+
+- Create constructs a new SSL * variable from a previous created context
+-
+- @param Socket * original socket with a previous created context
+-
+
  **/
-void SSLSocket::Copy( SSLSocket * original ) {
-   SSL * ssl;
+void SSLSocket::Copy( SSLSocket *original ) {
+   SSL* ssl;
    int st;
 
    // Constructs a new SSL * variable using SSL_new() function
@@ -196,17 +200,17 @@ void SSLSocket::Copy( SSLSocket * original ) {
    // Assign new variable to instance variable
 
    // change conection status  to SSL using SSL_set_fd() function
-   // Check for errors 
+   // Check for errors
 
 }
 
-
-
 /**
- *   SSLSocket::Accept
- *
- *  waits for a TLS/SSL client to initiate the TLS/SSL handshake
- *
+
+- SSLSocket::Accept
+-
+- waits for a TLS/SSL client to initiate the TLS/SSL handshake
+-
+
  **/
 void SSLSocket::Accept(){
    int st = -1;
@@ -216,11 +220,11 @@ void SSLSocket::Accept(){
 
 }
 
-
-
 /**
- *   Get SSL ciphers
- *
+
+- Get SSL ciphers
+-
+
  **/
 const char * SSLSocket::GetCipher() {
 
@@ -228,9 +232,7 @@ const char * SSLSocket::GetCipher() {
 
 }
 
-
-
-   - Los ejemplos provistos "SSLClient.cc" y "SSLServer.cc" deben funcionar correctamente, requieren que un certificado haya sido creado por medio de openssl y almacenado en un archivo "ci0123.pem"
+- Los ejemplos provistos "SSLClient.cc" y "SSLServer.cc" deben funcionar correctamente, requieren que un certificado haya sido creado por medio de openssl y almacenado en un archivo "ci0123.pem"
 
 Referencias
-   https://os.ecci.ucr.ac.cr/ci0123/material/sockets-course.ppt
+   <https://os.ecci.ucr.ac.cr/ci0123/material/sockets-course.ppt>
