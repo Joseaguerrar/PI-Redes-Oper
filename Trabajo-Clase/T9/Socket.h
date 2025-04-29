@@ -20,11 +20,13 @@ class Socket
 {
 
 public:
-   Socket(char, bool = false);
+   Socket(char t = 's', bool IPv6 = false);
    Socket(int); // Constructor adicional para aceptar un descriptor
-   ~Socket();
+   virtual ~Socket();
+
    int MakeConnection(const char *, int);
    int MakeConnection(const char *, const char *);
+
    size_t Read(void *, size_t);
    size_t Write(const void *, size_t);
    size_t Write(const char *);
@@ -33,6 +35,10 @@ protected:
    int idSocket;
    bool IPv6;
    char type;
+
+   void BuildSocket(char t, bool IPv6); // Crear el socket
+   int EstablishConnection(const char *hostip, int port);
+   int EstablishConnection(const char *host, const char *service);
 };
 
 #endif
