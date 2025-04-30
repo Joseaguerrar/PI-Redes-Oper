@@ -57,7 +57,7 @@ int main(int argc, char **argv)
    int port = (argc > 1) ? std::atoi(argv[1]) : PORT;
 
    // Inicialización del servidor SSL
-   SSLSocket *server = new SSLSocket('s');
+   SSLSocket *server = new SSLSocket('s', true);
    server->Bind(port);
    server->Listen(10);
    server->SSLInitServer("ci0123.pem", "ci0123.pem");
