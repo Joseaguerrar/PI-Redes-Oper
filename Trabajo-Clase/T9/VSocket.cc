@@ -113,54 +113,36 @@ void VSocket::Close()
  * @param      int port: process address, example 80
  *
  **/
-int VSocket::MakeConnection(const char *hostname, int port)
+int VSocket::MakeConnection(const char *host, int port)
 {
-    try
+    struct addrinfo hints{}, *res, *rp;
+    char portstr[6];
+    snprintf(portstr, sizeof(portstr), "%d", port);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = (type == 'd' ? SOCK_DGRAM : SOCK_STREAM);
+    hints.ai_flags = 0;
+    hints.ai_protocol = 0;
+    if (getaddrinfo(host, portstr, &hints, &res) != 0)
     {
-        // Resolve hostname or IP address using gethostbyname
-        struct hostent *host;
-        struct sockaddr_in hostAddr;
-        int socketFD;
-
-        // Get host information
-        if ((host = gethostbyname(hostname)) == NULL)
-        {
-            perror("Error resolving hostname");
-            return -1; // or handle this error according to your needs
-        }
-
-        // Create the socket
-        socketFD = socket(AF_INET, SOCK_STREAM, 0);
-        if (socketFD < 0)
-        {
-            perror("Error creating socket");
-            return -1;
-        }
-
-        // Clear the sockaddr_in structure
-        memset(&hostAddr, 0, sizeof(hostAddr));
-
-        // Setup the sockaddr_in structure for IPv4
-        hostAddr.sin_family = AF_INET;
-        hostAddr.sin_port = htons(port);                    // Set port in network byte order
-        hostAddr.sin_addr.s_addr = *(long *)(host->h_addr); // Set the IP address from gethostbyname result
-
-        // Attempt to connect
-        if (connect(socketFD, (struct sockaddr *)&hostAddr, sizeof(hostAddr)) != 0)
-        {
-            close(socketFD);
-            perror("Connection failed");
-            return -1; // or handle this error according to your needs
-        }
-
-        // Return the file descriptor if the connection is successful
-        return socketFD;
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << "Exception occurred: " << e.what() << std::endl;
+        perror("getaddrinfo");
         return -1;
     }
+    int sockfd = -1;
+    for (rp = res; rp; rp = rp->ai_next)
+    {
+        sockfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (sockfd < 0)
+            continue;
+        if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) == 0)
+        {
+            this->idSocket = sockfd;
+            break;
+        }
+        close(sockfd);
+        sockfd = -1;
+    }
+    freeaddrinfo(res);
+    return sockfd;
 }
 
 /**
@@ -271,7 +253,13 @@ int VSocket::Bind(int port)
         char addr_str[INET6_ADDRSTRLEN]; // Buffer para la dirección IP
         inet_ntop(AF_INET6, &host6.sin6_addr, addr_str, sizeof(addr_str));
         printf("Binding to IPv6: %s:%d\n", addr_str, ntohs(host6.sin6_port));
-
+        // Permitir dual-stack (aceptar también IPv4 mapeadas)
+        int off = 0;
+        if (setsockopt(idSocket, IPPROTO_IPV6, IPV6_V6ONLY, &off, sizeof(off)) < 0)
+        {
+            perror("setsockopt IPV6_V6ONLY");
+            // no abortamos; seguimos intentando el bind de todas formas
+        }
         st = bind(idSocket, (const sockaddr *)&host6, sizeof(host6));
     }
     else
