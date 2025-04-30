@@ -11,51 +11,65 @@
  *
  **/
 
-#include <cstdlib>
-#include <cstring> // strlen
-#include <cstdio>
+#include <cstdlib> // atoi, exit
+#include <cstring> // strlen, snprintf
+#include <cstdio>  // printf, scanf
+#include "SSLSocket.h"
 
-#include "Socket.h"
-
-/**
- *
- **/
-int main(int cuantos, char *argumentos[])
+int main(int argc, char *argv[])
 {
-   Socket *client;
-   char userName[16] = {0};
-   char password[16] = {0};
-   const char *requestMessage = "\n<Body>\n\
-\t<UserName>%s</UserName>\n\
-\t<Password>%s</Password>\n\
-</Body>\n";
-
-   char buf[1024];
-   char clientRequest[1024] = {0};
-   int bytes;
-   char *hostname, *portnum;
-
-   client = new Socket('s');
-   if (cuantos != 3)
+   if (argc != 3)
    {
-      printf("usage: %s <hostname> <portnum>\n", argumentos[0]);
-      exit(0);
+      printf("usage: %s <hostname> <portnum>\n", argv[0]);
+      return 1;
    }
-   hostname = argumentos[1];
-   portnum = argumentos[2];
+
+   const char *hostname = argv[1];
+   int port = std::atoi(argv[2]);
+
+   // 1) Creamos un SSLSocket (no un Socket)
+   SSLSocket *client = new SSLSocket('s');
+
+   // 2) Inicializamos la librería SSL
    client->SSLInit();
-   client->SSLConnect(hostname, atoi(portnum));
-   printf("Enter the User Name : ");
-   scanf("%s", userName);
-   printf("\nEnter the Password : ");
-   scanf("%s", password);
-   sprintf(clientRequest, requestMessage, userName, password); // construct reply
-   printf("\n\nConnected with %s encryption\n", client->SSLGetCipher());
-   client->SSLShowCerts();                                 // display any certs
-   client->SSLWrite(clientRequest, strlen(clientRequest)); // encrypt & send message
-   bytes = client->SSLRead(buf, sizeof(buf));              // get reply & decrypt
-   buf[bytes] = 0;
+
+   // 3) Conectamos (TCP + handshake SSL interno)
+   try
+   {
+      client->SSLConnect(const_cast<char *>(hostname), port);
+   }
+   catch (const std::exception &e)
+   {
+      fprintf(stderr, "SSLConnect failed: %s\n", e.what());
+      return 1;
+   }
+
+   // 4) Pedimos credenciales al usuario
+   char userName[16] = {0}, password[16] = {0};
+   printf("Enter the User Name: ");
+   scanf("%15s", userName);
+   printf("Enter the Password: ");
+   scanf("%15s", password);
+
+   // 5) Montamos el mensaje XML
+   char clientRequest[1024];
+   std::snprintf(clientRequest, sizeof(clientRequest),
+                 "\n<Body>\n\t<UserName>%s</UserName>\n\t<Password>%s</Password>\n</Body>\n",
+                 userName, password);
+
+   // 6) Información de cifrado y certificados
+   printf("\nConnected with %s encryption\n", client->SSLGetCipher());
+   client->SSLShowCerts();
+
+   // 7) Enviamos y recibimos
+   client->SSLWrite(clientRequest, std::strlen(clientRequest));
+   char buf[1024];
+   int bytes = client->SSLRead(buf, sizeof(buf));
+   buf[bytes] = '\0';
    printf("Received: \"%s\"\n", buf);
 
+   // 8) Cerramos
+   client->SSLCleanup();
+   delete client;
    return 0;
 }
