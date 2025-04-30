@@ -7,10 +7,9 @@
  **/
 
 #include <thread>
-#include <cstdlib> // atoi
+#include <cstdlib> // atoi, exit
 #include <cstdio>  // printf
-#include <cstring> // strlen, strcmp
-
+#include <cstring> // strcmp, strlen
 #include "SSLSocket.h"
 
 #define PORT 4321
@@ -18,59 +17,81 @@
 void Service(SSLSocket *client)
 {
    char buf[1024] = {0};
-   int sd, bytes;
    const char *ServerResponse = "\n<Body>\n\
 \t<Server>os.ecci.ucr.ac.cr</Server>\n\
 \t<dir>ci0123</dir>\n\
 \t<Name>Proyecto Integrador Redes y sistemas Operativos</Name>\n\
 \t<NickName>PIRO</NickName>\n\
 \t<Description>Consolidar e integrar los conocimientos de redes y sistemas operativos</Description>\n\
-\t<Author>profesores PIRO</Author>\n\
-</Body>\n";
+\t<Author>profesores PIRO</Author>\n</Body>\n";
    const char *validMessage = "\n<Body>\n\
 \t<UserName>piro</UserName>\n\
-\t<Password>ci0123</Password>\n\
-</Body>\n";
+\t<Password>ci0123</Password>\n</Body>\n";
 
-   client->Accept();
-   client->ShowCerts();
+   // Mostrar certificados del cliente
+   client->SSLShowCerts();
 
-   bytes = client->Read(buf, sizeof(buf));
+   // Leer petición del cliente
+   int bytes = client->SSLRead(buf, sizeof(buf));
    buf[bytes] = '\0';
    printf("Client msg: \"%s\"\n", buf);
 
-   if (!strcmp(validMessage, buf))
+   // Validar y responder
+   if (std::strcmp(validMessage, buf) == 0)
    {
-      client->Write(ServerResponse, strlen(ServerResponse));
+      client->SSLWrite(ServerResponse, std::strlen(ServerResponse));
    }
    else
    {
-      client->Write("Invalid Message", strlen("Invalid Message"));
+      const char *err = "Invalid Message";
+      client->SSLWrite(err, std::strlen(err));
    }
 
-   client->Close();
+   // Cerrar conexión
+   client->SSLCleanup();
+   delete client;
 }
 
-int main(int cuantos, char **argumentos)
+int main(int argc, char **argv)
 {
-   SSLSocket *server, *client;
-   std::thread *worker;
-   int port = PORT;
+   int port = (argc > 1) ? std::atoi(argv[1]) : PORT;
 
-   if (cuantos > 1)
-   {
-      port = atoi(argumentos[1]);
-   }
-
-   server = new SSLSocket('s');
+   // Inicialización del servidor SSL
+   SSLSocket *server = new SSLSocket('s');
    server->Bind(port);
    server->Listen(10);
-   server->InitServer("ci0123.pem", "ci0123.pem");
+   server->SSLInitServer("ci0123.pem", "ci0123.pem");
 
    for (;;)
    {
-      client = server->Accept();
-      client->CopyContext(server);
-      worker = new std::thread(Service, client); // service connection
+      // 1) Aceptar conexión TCP
+      int client_fd = server->DoAccept();
+
+      // 2) Construir SSLSocket para el cliente
+      SSLSocket *client = new SSLSocket('s', true);
+      client->BuildSocket(client_fd);
+
+      // 3) Crear objeto SSL y asociarlo al contexto del servidor
+      client->SSLCreate(server);
+
+      // 4) Hacer handshake SSL
+      try
+      {
+         client->SSLAccept();
+      }
+      catch (const std::exception &e)
+      {
+         // Mostrar error y descartar cliente
+         ERR_print_errors_fp(stderr);
+         delete client;
+         continue;
+      }
+
+      // 5) Servir en hilo separado
+      std::thread(Service, client).detach();
    }
+
+   // Nunca llega aquí, limpiar si fuera necesario
+   delete server;
+   return 0;
 }
