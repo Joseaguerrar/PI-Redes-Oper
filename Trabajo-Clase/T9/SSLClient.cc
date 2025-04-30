@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
    int port = std::atoi(argv[2]);
 
    // 1) Creamos un SSLSocket (no un Socket)
-   SSLSocket *client = new SSLSocket('s');
+   SSLSocket *client = new SSLSocket('s', true);
 
    // 2) Inicializamos la librería SSL
    client->SSLInit();
