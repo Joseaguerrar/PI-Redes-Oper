@@ -123,27 +123,33 @@ Semaphore::Destroy()
 // Note -- without a correct implementation of Condition::Wait(), 
 // the test case in the network assignment won't work!
 Lock::Lock(const char* debugName) {
+    char *name = (char *)debugName;
+    semaphore = new Semaphore("lockSemaphore", 1); // Initialize the semaphore
+    owner = NULL; // No thread owns the lock at the beginning
 
 }
 
 
 Lock::~Lock() {
-
+    delete semaphore;
 }
 
 
 void Lock::Acquire() {
-
+    semaphore->P(); // Wait until the lock is available
+    owner = currentThread; // Set the current thread as the owner
 }
 
 
 void Lock::Release() {
-
+    ASSERT(isHeldByCurrentThread()); // Check if the current thread owns the lock
+    owner = NULL; // Release the lock by setting owner to NULL
+    semaphore->V(); // Signal that the lock is available
 }
 
 
 bool Lock::isHeldByCurrentThread() {
-   return false;
+   return owner == currentThread; // Check if the current thread owns the lock
 }
 
 
