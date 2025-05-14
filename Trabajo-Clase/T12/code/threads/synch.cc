@@ -154,26 +154,48 @@ bool Lock::isHeldByCurrentThread() {
 
 
 Condition::Condition(const char* debugName) {
-
+    name = (char *)debugName;           // Initialize the condition variable
+    waitingQueue = new List<Thread*>(); // Initialize the waiting queue
 }
 
 
 Condition::~Condition() {
-
+    delete waitingQueue; // Deallocate the waiting queue
 }
 
 
 void Condition::Wait( Lock * conditionLock ) {
+    ASSERT(conditionLock->isHeldByCurrentThread());
 
+    IntStatus oldLevel = interrupt->SetLevel(IntOff); // Desactivar interrupciones
+    waitingQueue->Append(currentThread);              // Agregar hilo a la cola
+    conditionLock->Release();                         // Liberar el lock
+    currentThread->Sleep();                           // Ir a dormir
+    interrupt->SetLevel(oldLevel);                    // Restaurar interrupciones
+    conditionLock->Acquire();                         // Re-adquirir el lock al despertar
 }
 
 
 void Condition::Signal( Lock * conditionLock ) {
+    ASSERT(conditionLock->isHeldByCurrentThread());
 
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    Thread *thread = waitingQueue->Remove();
+    if (thread != NULL)
+    {
+        scheduler->ReadyToRun(thread); // Despierta un hilo
+    }
+    interrupt->SetLevel(oldLevel);
 }
 
 
 void Condition::Broadcast( Lock * conditionLock ) {
+    ASSERT(conditionLock->isHeldByCurrentThread());
+
+    while (!waitingQueue->IsEmpty())
+    {
+        Signal(conditionLock); // Despertar uno por uno
+    }
 }
 
 
