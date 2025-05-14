@@ -136,7 +136,8 @@ class Condition {
   private:
     char* name;
     // plus some other stuff you'll need to define
-};
+    List<Thread*> *waitingQueue; // List of threads waiting on the condition
+  };
 
 
 // The following class define a Mutex, a binary semaphore initialized in 1
