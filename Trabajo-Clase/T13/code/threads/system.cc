@@ -36,6 +36,10 @@ SynchDisk   *synchDisk;
 Machine *machine;	// user program memory and registers
 #endif
 
+#ifdef USER_PROGRAM
+BitMap *MiMapa; // Definición del mapa de bits global para páginas físicas
+#endif
+
 #ifdef NETWORK
 PostOffice *postOffice;
 #endif
@@ -178,6 +182,9 @@ Initialize(int argc, char **argv)
     
 #ifdef USER_PROGRAM
     machine = new Machine(debugUserProg);	// this must come first
+
+    // Inicialización del mapa de bits de memoria física
+    MiMapa = new BitMap(NumPhysPages); // Una entrada por cada página física
 #endif
 
 #ifdef FILESYS
@@ -212,6 +219,7 @@ Cleanup()
     
 #ifdef USER_PROGRAM
     delete machine;
+    delete MiMapa; // Destrucción del mapa de bits global
 #endif
 
 #ifdef FILESYS_NEEDED
