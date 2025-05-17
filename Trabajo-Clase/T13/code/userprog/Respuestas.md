@@ -323,3 +323,83 @@ for (int i = 0; i < numPages; ++i) {
     MiMapa->Clear(pageTable[i].physicalPage);
     MiMapaLock->Release();
 }
+
+## 12. Cómo se carga el programa a memoria en NachOS?
+
+NachOS carga un ejecutable en memoria en el constructor de AddrSpace. Se realiza lo siguiente:
+
+**Se abre el archivo binario.**
+
+**Se lee el encabezado (NOFF).**
+
+**Se determina el tamaño total del programa (code + initData + uninitData + stack).**
+
+**Se asignan páginas físicas mediante el BitMap.**
+
+**Finalmente, el archivo se lee en memoria usando ReadAt.**
+
+## 13. Qué hace el método ReadAt de la clase OpenFile?
+
+El método ReadAt permite leer una cantidad específica de bytes desde una posición dada del archivo:
+
+**int OpenFile::ReadAt(char *into, int numBytes, int position)**
+
+Parámetros:
+**char*into: el buffer donde se almacenan los datos leídos.**
+
+**int numBytes: cuántos bytes se desean leer.**
+
+**int position: desde qué posición del archivo comenzar a leer.**
+
+## 14. Por qué hay dos llamados a ReadAt?
+
+Porque hay al menos dos segmentos que se deben cargar desde el archivo a memoria:
+
+*Uno para el segmento de código (code).
+
+*Otro para el segmento de datos inicializados (initData).
+
+Cada segmento tiene diferente posición y tamaño, por lo tanto se necesitan lecturas independientes.
+
+## 15. Estructura del archivo ejecutable NachOS (NOFF)
+
+|------------------|
+| Encabezado (H)   |  (noffHeader)
+|------------------|
+| Texto (TX)       |  Código (instrucciones ejecutables)
+|------------------|
+| Datos Init. (DI) |  Variables globales con valor
+|------------------|
+| Datos No Init.   |  Variables globales sin valor (se reservan)
+|------------------|
+| Pila (S)         |  Stack del programa
+|------------------|
+
+## 16. Qué es el número mágico?
+
+El número mágico (magic number) en NOFF es 0xBADFAD (aunque puede variar en endianess). Se usa para identificar si el archivo tiene un formato válido. Se valida al inicio del constructor de AddrSpace.
+
+## 17. Cómo se leen los segmentos por páginas (128 bytes)?
+
+for (int i = 0; i < code.size; i += PageSize) {
+   int bytesToRead = min(PageSize, code.size - i);
+   int physAddr = pageTable[virtPage].physicalPage * PageSize;
+   executable->ReadAt(&mainMemory[physAddr], bytesToRead, code.inFileAddr + i);
+}
+**Se hace lo mismo para initData**
+
+## 18. Qué pasa si el segmento no es múltiplo de 128 bytes?
+
+El último ReadAt se hace con menos de 128 bytes (min(PageSize, size - i)), para evitar sobrelectura. Solo se lee lo necesario.
+
+## 19. Qué se hace con la pila y los datos no inicializados?
+
+Aunque no se leen del archivo, se reservan páginas en memoria mediante BitMap y se agregan a pageTable. Se inicializan a cero o se dejan sin tocar hasta su uso.
+
+## 20. Qué se debe deshacer al terminar el programa (Exit)?
+
+Liberar las páginas físicas en el BitMap (MiMapa->Clear()).
+
+Destruir la AddrSpace.
+
+Terminar el hilo con currentThread->Finish().
