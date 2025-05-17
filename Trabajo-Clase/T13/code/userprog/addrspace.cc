@@ -84,15 +84,34 @@ AddrSpace::AddrSpace(OpenFile *executable)
 					numPages, size);
 // first, set up the translation 
     pageTable = new TranslationEntry[numPages];
+    // Marcar páginas ocupadas como prueba antes de asignar frames a pageTable
+    /*if (MiMapa->NumClear() >= 12)
+    {
+        MiMapa->Mark(0);
+        MiMapa->Mark(2);
+        MiMapa->Mark(4);
+        MiMapa->Mark(6);
+        MiMapa->Mark(8);
+        MiMapa->Mark(10);
+    }*/
     for (i = 0; i < numPages; i++) {
-	pageTable[i].virtualPage = i;	// for now, virtual page # = phys page #
-	pageTable[i].physicalPage = i;
+    int frame = MiMapa->Find();	// Busca una página libre
+    if (frame == -1) {
+        printf("ERROR: No hay páginas físicas libres para la página virtual %d\n", i);
+        ASSERT(false);
+    }
+    ASSERT(frame != -1);    // Falla si no hay espacio libre
+
+	pageTable[i].virtualPage = i;	
+	pageTable[i].physicalPage = frame;
 	pageTable[i].valid = true;
 	pageTable[i].use = false;
 	pageTable[i].dirty = false;
 	pageTable[i].readOnly = false;  // if the code segment was entirely on 
 					// a separate page, we could set its 
 					// pages to be read-only
+    /* Imprimir para depurar
+    printf("Asignando página virtual %d a frame físico %d\n", i, frame);*/
     }
     
 // zero out the entire address space, to zero the unitialized data segment 
@@ -122,7 +141,11 @@ AddrSpace::AddrSpace(OpenFile *executable)
 
 AddrSpace::~AddrSpace()
 {
-   delete pageTable;
+    for (unsigned int i = 0; i < numPages; ++i)
+    {
+        MiMapa->Clear(pageTable[i].physicalPage); // Liberar frame físico
+    }
+    delete[] pageTable;
 }
 
 //----------------------------------------------------------------------
