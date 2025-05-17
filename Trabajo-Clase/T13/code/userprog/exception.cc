@@ -40,8 +40,14 @@ void NachOS_Halt() {		// System call 0
  *  System call interface: void Exit( int )
  */
 void NachOS_Exit() {		// System call 1
+   // Avanzar el PC para evitar repetir el syscall
+   machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+   machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+   machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+   int status = machine->ReadRegister(4); // obtener el status de salida
+   DEBUG('u', "Exit system call invoked with status %d\n", status);
+   currentThread->Finish(); // finaliza el hilo actual
 }
-
 
 /*
  *  System call interface: SpaceId Exec( char * )
@@ -75,8 +81,36 @@ void NachOS_Open() {		// System call 5
  *  System call interface: OpenFileId Write( char *, int, OpenFileId )
  */
 void NachOS_Write() {		// System call 6
-}
+   int addr = machine->ReadRegister(4); // Dirección del buffer
+   int size = machine->ReadRegister(5); // Tamaño del buffer
+   int file = machine->ReadRegister(6); // File descriptor
 
+   // Avanzar el PC para evitar repetir el syscall
+   machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+   machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+   machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+   
+   char buffer[512];
+   for (int i = 0; i < size && i < 512; ++i)
+   {
+      int value;
+      if (machine->ReadMem(addr + i, 1, &value))
+      {
+         buffer[i] = (char)value;
+      }
+      else
+      {
+         buffer[i] = '?';
+      }
+   }
+   if (file == ConsoleOutput || file == ConsoleError)
+   {
+      for (int i = 0; i < size && i < 512; ++i)
+      {
+         printf("%c", buffer[i]);
+      }
+   }
+}
 
 /*
  *  System call interface: OpenFileId Read( char *, int, OpenFileId )
