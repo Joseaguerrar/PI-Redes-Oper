@@ -25,7 +25,10 @@
 #include "system.h"
 #include "syscall.h"
 #include "machine.h"
+#include <fcntl.h>  // Al inicio del archivo
+#include <unistd.h> // Para close()
 
+void returnFromSystemCall(); // forward declaration
 /*
  *  System call interface: Halt()
  */
@@ -87,7 +90,7 @@ void NachOS_Open() {		// System call 5
    }
    filename[127] = '\0';
 
-   int unixHandle = open(filename, 0); // modo solo lectura
+   int unixHandle = open(filename, O_RDONLY); // usar <fcntl.h> arriba
    if (unixHandle == -1)
    {
       machine->WriteRegister(2, -1);
