@@ -1,0 +1,43 @@
+Una vez reiniciado el switch, se realizó la siguiente configuración:
+
+Entrar al modo privilegiado:
+enable
+
+Crear la VLAN 350 y asignarle nombre:
+configure terminal
+vlan 350
+name G3E5
+exit
+
+Asignar los puertos Fa0/13 al Fa0/24 a la VLAN 350:
+interface range fa0/13 - 24
+switchport mode access
+switchport access vlan 350
+exit
+
+Guardar la configuración:
+end
+write memory
+
+Salida del comando show vlan brief
+
+Switch# show vlan brief
+
+VLAN Name                             Status    Ports
+---- -------------------------------- --------- -------------------------------
+1    default                          active    Fa0/1, Fa0/2, Fa0/3, Fa0/4,
+                                             Fa0/5, Fa0/6, Fa0/7, Fa0/8,
+                                             Fa0/9, Fa0/10, Fa0/11, Fa0/12
+350  G3E5                             active    Fa0/13, Fa0/14, Fa0/15, Fa0/16,
+                                             Fa0/17, Fa0/18, Fa0/19, Fa0/20,
+                                             Fa0/21, Fa0/22, Fa0/23, Fa0/24
+
+
+Observaciones
+Se eliminó la configuración anterior para asegurar un entorno limpio.
+
+La VLAN 350 fue creada exitosamente y está activa.
+
+Se asignaron correctamente los puertos indicados a la VLAN.
+
+La configuración fue guardada para mantenerse tras reinicios.
