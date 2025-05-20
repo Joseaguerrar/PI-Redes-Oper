@@ -20,6 +20,11 @@
 #include "synch.h"
 #include "system.h"
 
+
+#ifdef USER_PROGRAM
+#include "nachostabla.h"
+#endif
+
 // this is put at the top of the execution stack,
 // for detecting stack overflows
 const unsigned STACK_FENCEPOST = 0xdeadbeef;	
@@ -40,6 +45,7 @@ Thread::Thread(const char* threadName)
     status = JUST_CREATED;
 #ifdef USER_PROGRAM
     space = NULL;
+    tabla = new NachosOpenFilesTable(); // crear una tabla de archivos abiertos
 #endif
 }
 
@@ -62,6 +68,13 @@ Thread::~Thread()
     ASSERT(this != currentThread);
     if (stack != NULL)
 	DeallocBoundedArray((char *) stack, StackSize * sizeof(HostMemoryAddress));
+    #ifdef USER_PROGRAM
+        if (tabla != nullptr)
+        {
+            delete tabla;
+            tabla = nullptr;
+        }
+    #endif
 }
 
 //----------------------------------------------------------------------
