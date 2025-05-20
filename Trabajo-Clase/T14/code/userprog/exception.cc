@@ -42,9 +42,7 @@ void NachOS_Halt() {		// System call 0
  */
 void NachOS_Exit() {		// System call 1
    // Avanzar el PC para evitar repetir el syscall
-   machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-   machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-   machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+   returnFromSystemCall();
    int status = machine->ReadRegister(4); // obtener el status de salida
    DEBUG('u', "Exit system call invoked with status %d\n", status);
    currentThread->Finish(); // finaliza el hilo actual
@@ -113,9 +111,7 @@ void NachOS_Write() {		// System call 6
    int file = machine->ReadRegister(6); // File descriptor
 
    // Avanzar el PC para evitar repetir el syscall
-   machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
-   machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
-   machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+   returnFromSystemCall();
    
    char buffer[512];
    for (int i = 0; i < size && i < 512; ++i)
