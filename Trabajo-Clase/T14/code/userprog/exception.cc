@@ -24,6 +24,7 @@
 #include "copyright.h"
 #include "system.h"
 #include "syscall.h"
+#include "machine.h"
 
 /*
  *  System call interface: Halt()
@@ -74,6 +75,32 @@ void NachOS_Create() {		// System call 4
  *  System call interface: OpenFileId Open( char * )
  */
 void NachOS_Open() {		// System call 5
+   int addr = machine->ReadRegister(4); // Dirección del string en memoria de usuario
+   char filename[128];
+
+   int val;
+   for (int i = 0; i < 127; i++)
+   {
+      if (!machine->ReadMem(addr + i, 1, &val))
+         break;
+      filename[i] = (char)val;
+      if (filename[i] == '\0')
+         break;
+   }
+   filename[127] = '\0';
+
+   int unixHandle = open(filename, 0); // modo solo lectura
+   if (unixHandle == -1)
+   {
+      machine->WriteRegister(2, -1);
+      returnFromSystemCall();
+      return;
+   }
+
+   int nachosHandle = currentThread->tabla->Open(unixHandle);
+   machine->WriteRegister(2, nachosHandle);
+
+   returnFromSystemCall();
 }
 
 
@@ -272,6 +299,20 @@ void NachOS_Accept() {		// System call 34
 void NachOS_Shutdown() {	// System call 25
 }
 
+/**
+ * Return from a system call
+ */
+void returnFromSystemCall()
+{
+   // PrevPC <- PC actual
+   machine->WriteRegister(PrevPCReg, machine->ReadRegister(PCReg));
+
+   // PC <- NextPC actual (avanzamos al siguiente paso del programa)
+   machine->WriteRegister(PCReg, machine->ReadRegister(NextPCReg));
+
+   // NextPC <- NextPC + 4 (preparar la siguiente instrucción)
+   machine->WriteRegister(NextPCReg, machine->ReadRegister(NextPCReg) + 4);
+}
 
 //----------------------------------------------------------------------
 // ExceptionHandler
