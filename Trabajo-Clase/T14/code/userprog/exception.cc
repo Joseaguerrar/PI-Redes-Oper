@@ -25,6 +25,7 @@
 #include "system.h"
 #include "syscall.h"
 #include "machine.h"
+#include "nachostabla.h"
 #include <fcntl.h>  // Al inicio del archivo
 #include <unistd.h> // Para close()
 
@@ -111,37 +112,106 @@ void NachOS_Open() {		// System call 5
 void NachOS_Write() {		// System call 6
    int addr = machine->ReadRegister(4); // Dirección del buffer
    int size = machine->ReadRegister(5); // Tamaño del buffer
-   int file = machine->ReadRegister(6); // File descriptor
-
-   // Avanzar el PC para evitar repetir el syscall
-   returnFromSystemCall();
+   int fd = machine->ReadRegister(6); // File descriptor
    
    char buffer[512];
-   for (int i = 0; i < size && i < 512; ++i)
+   int val;
+
+   if (size > 511)
+      size = 511;
+
+   // Leer el buffer de la memoria del usuario
+   for (int i = 0; i < size; i++)
    {
-      int value;
-      if (machine->ReadMem(addr + i, 1, &value))
+      if (!machine->ReadMem(addr + i, 1, &val))
       {
-         buffer[i] = (char)value;
+         buffer[i] = '?'; // Error de lectura
       }
       else
       {
-         buffer[i] = '?';
+         buffer[i] = (char)val;
       }
    }
-   if (file == ConsoleOutput || file == ConsoleError)
+
+   // Escribir según el descriptor
+   if (fd == ConsoleOutput || fd == ConsoleError)
    {
-      for (int i = 0; i < size && i < 512; ++i)
+      for (int i = 0; i < size; i++)
       {
          printf("%c", buffer[i]);
       }
+      machine->WriteRegister(2, size); // devuelve cantidad escrita
    }
+   else
+   {
+      // Verificar si el descriptor es válido
+      if (!currentThread->tabla->isOpened(fd))
+      {
+         machine->WriteRegister(2, -1); // error
+      }
+      else
+      {
+         int unixFD = currentThread->tabla->getUnixHandle(fd);
+         int written = write(unixFD, buffer, size);
+         machine->WriteRegister(2, written); // devuelve cantidad escrita
+      }
+   }
+   // Avanzar el PC para evitar repetir el syscall
+   returnFromSystemCall();
 }
 
 /*
  *  System call interface: OpenFileId Read( char *, int, OpenFileId )
  */
 void NachOS_Read() {		// System call 7
+   int addr = machine->ReadRegister(4); // Dirección del buffer en user memory
+   int size = machine->ReadRegister(5); // Cantidad de bytes a leer
+   int fd = machine->ReadRegister(6);   // File descriptor
+
+   char buffer[512];
+   if (size > 511)
+      size = 511;
+
+   int bytesRead = 0;
+
+   if (fd == ConsoleInput)
+   {
+      for (int i = 0; i < size; i++)
+      {
+         char c = getchar(); // leer de stdin
+         buffer[i] = c;
+         bytesRead++;
+         if (c == '\n')
+            break;
+      }
+   }
+   else
+   {
+      if (!currentThread->tabla->isOpened(fd))
+      {
+         machine->WriteRegister(2, -1);
+         returnFromSystemCall();
+         return;
+      }
+
+      int unixFD = currentThread->tabla->getUnixHandle(fd);
+      bytesRead = read(unixFD, buffer, size);
+      if (bytesRead < 0)
+      {
+         machine->WriteRegister(2, -1);
+         returnFromSystemCall();
+         return;
+      }
+   }
+
+   // Escribir lo leído a memoria del usuario
+   for (int i = 0; i < bytesRead; i++)
+   {
+      machine->WriteMem(addr + i, 1, (int)buffer[i]);
+   }
+
+   machine->WriteRegister(2, bytesRead); // devolver cantidad leída
+   returnFromSystemCall();
 }
 
 
