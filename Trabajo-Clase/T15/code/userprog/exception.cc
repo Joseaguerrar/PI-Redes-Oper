@@ -648,7 +648,8 @@ ExceptionHandler(ExceptionType which)
 
        case AddressErrorException:
           printf( "Address error exception (%d)\n", which );
-          ASSERT( false );
+          currentThread->Finish(); // finaliza el hilo que hizo la violación
+          ASSERT(false);
           break;
 
        case OverflowException:
