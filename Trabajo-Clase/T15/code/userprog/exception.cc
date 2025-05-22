@@ -282,6 +282,34 @@ void NachOS_Fork() {		// System call 9
    DEBUG('u', "Exiting Fork System call\n");
 }
 
+/*
+ *
+ */
+void Nachos_ForkThread(void *arg)
+{
+   // Desempaquetar los argumentos
+   ForkArgs *args = (ForkArgs *)arg;
+
+   currentThread->space->InitRegisters();
+   currentThread->space->RestoreState();
+
+   // Dirección de retorno: cuando termine, se llama a Exit
+   machine->WriteRegister(RetAddrReg, 8);
+
+   // Establecer la rutina que el usuario pidió ejecutar
+   machine->WriteRegister(PCReg, (long)args->userFunc);
+   machine->WriteRegister(NextPCReg, (long)args->userFunc + 4);
+
+   // Asignar la pila exclusiva para este hilo
+   machine->WriteRegister(StackReg, args->stackBase);
+
+   // Liberar la estructura de argumentos
+   delete args;
+
+   // Ejecutar el código del usuario
+   machine->Run();
+   ASSERT(false); // Nunca debe llegar aquí
+}
 
 /*
  *  System call interface: void Yield()
