@@ -287,6 +287,9 @@ void NachOS_Fork() {		// System call 9
  *  System call interface: void Yield()
  */
 void NachOS_Yield() {		// System call 10
+   DEBUG('u', "System call: Yield\n");
+   currentThread->Yield();
+   returnFromSystemCall(); // Para avanzar el PC
 }
 
 
