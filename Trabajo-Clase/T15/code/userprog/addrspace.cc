@@ -139,6 +139,43 @@ AddrSpace::AddrSpace(OpenFile *executable)
 // 	Dealloate an address space.  Nothing for now!
 //----------------------------------------------------------------------
 
+// Constructor usado por Fork: comparte código/datos y crea una pila nueva para el hijo
+AddrSpace::AddrSpace(AddrSpace *parent, int threadId)
+{
+    // Copiamos el número de páginas del padre, ya que compartimos el mismo tamaño
+    numPages = parent->numPages;
+
+    // Creamos una nueva tabla de páginas para este hilo
+    pageTable = new TranslationEntry[numPages];
+
+    for (unsigned int i = 0; i < numPages; ++i)
+    {
+        // Compartimos todas las páginas del padre excepto las de la pila
+        if ((i + 1) * PageSize > (NumPhysPages * PageSize - (threadId + 1) * UserStackSize))
+        {
+            // Si esta página cae dentro del rango de la pila del nuevo hilo, reservamos un nuevo marco
+            int newFrame = MiMapa->Find();
+            ASSERT(newFrame != -1);
+
+            pageTable[i].virtualPage = i;
+            pageTable[i].physicalPage = newFrame;
+            pageTable[i].valid = true;
+            pageTable[i].use = false;
+            pageTable[i].dirty = false;
+            pageTable[i].readOnly = false;
+
+            // Iniciar en cero la nueva pila del hijo
+            bzero(&machine->mainMemory[newFrame * PageSize], PageSize);
+        }
+        else
+        {
+            // Para código/datos, copiamos las mismas entradas de la tabla de páginas del padre
+            pageTable[i] = parent->pageTable[i];
+        }
+    }
+
+    DEBUG('a', "Fork constructor: espacio creado con pila en región #%d\n", threadId);
+}
 AddrSpace::~AddrSpace()
 {
     for (unsigned int i = 0; i < numPages; ++i)
