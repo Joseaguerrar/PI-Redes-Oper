@@ -126,6 +126,7 @@ void NachOS_Open() {		// System call 5
  *  System call interface: OpenFileId Write( char *, int, OpenFileId )
  */
 void NachOS_Write() {		// System call 6
+   //printf("Entrando a NachOS_Write\n"); //Depuración
    int addr = machine->ReadRegister(4); // Dirección del buffer
    int size = machine->ReadRegister(5); // Tamaño del buffer
    int fd = machine->ReadRegister(6); // File descriptor
@@ -180,9 +181,12 @@ void NachOS_Write() {		// System call 6
       {
          int unixFD = currentThread->tabla->getUnixHandle(fd);
          int written = write(unixFD, buffer, size);
+         // Notificar al servidor que ya no se enviarán más datos
+         shutdown(unixFD, SHUT_WR);
          machine->WriteRegister(2, written); // devuelve cantidad escrita
       }
    }
+   //printf("Saliendo de NachOS_Write\n"); //Depuración
    // Avanzar el PC para evitar repetir el syscall
    returnFromSystemCall();
 }
@@ -196,14 +200,17 @@ void NachOS_Read() {		// System call 7
    int size = machine->ReadRegister(5); // Cantidad de bytes a leer
    int fd = machine->ReadRegister(6);   // File descriptor
 
-   char buffer[512];
+   char buffer[512]; // Buffer local para datos leídos
    if (size > 511)
       size = 511;
 
    int bytesRead = 0;
 
-   if (fd == ConsoleInput)
+   // Si es 0, es consola: leer con getchar()
+   //Solo considera que fd = 0 es el teclado si NachOS no lo está usando como archivo o socket ".
+       if (fd == ConsoleInput && !currentThread->tabla->isOpened(fd))
    {
+      //printf("Leyendo desde consola (stdin).\n"); //Depuración
       for (int i = 0; i < size; i++)
       {
          char c = getchar(); // leer de stdin
@@ -217,14 +224,14 @@ void NachOS_Read() {		// System call 7
    {
       if (!currentThread->tabla->isOpened(fd))
       {
+         //printf("Descriptor no válido o cerrado.\n"); //Depuración
          machine->WriteRegister(2, -1);
          returnFromSystemCall();
          return;
       }
 
       int unixFD = currentThread->tabla->getUnixHandle(fd);
-      //printf("Ejecutando syscall Read() sobre fd=%d, esperando datos...\n", fd); //Depuración
-
+      // Leer los datos disponibles
       bytesRead = read(unixFD, buffer, size);
       if (bytesRead < 0)
       {
@@ -238,10 +245,15 @@ void NachOS_Read() {		// System call 7
    // Escribir lo leído a memoria del usuario
    for (int i = 0; i < bytesRead; i++)
    {
-      machine->WriteMem(addr + i, 1, (int)buffer[i]);
+      if (!machine->WriteMem(addr + i, 1, (int)buffer[i]))
+      {
+         printf("WriteMem falló en posición %d\n", addr + i);
+      }
    }
 
    machine->WriteRegister(2, bytesRead); // devolver cantidad leída
+   //printf("NachOS_Read devolvió %d bytes al usuario.\n", bytesRead); //Depuración
+   //printf("Saliendo de NachOS_Read\n"); //Depuración
    returnFromSystemCall();
 }
 
@@ -433,7 +445,9 @@ void NachOS_Socket() {			// System call 30
    }
    else
    {
+      //printf("Creando socket real: %d\n", sockfd); //Depuración
       int nachosFD = currentThread->tabla->Open(sockfd);
+      //printf("Descriptor de NachOS asignado: %d\n", nachosFD); //Depuración
       machine->WriteRegister(2, nachosFD);
    }
 
@@ -444,9 +458,13 @@ void NachOS_Socket() {			// System call 30
  *  System call interface: Socket_t Connect( char *, int )
  */
 void NachOS_Connect() {		// System call 31
+   //printf("Entrando a NachOS_Connect\n"); //Depuración
    int sockfd = machine->ReadRegister(4);
    int addrUser = machine->ReadRegister(5); // Dirección de la IP en memoria de usuario
    int port = machine->ReadRegister(6);
+   /*printf("Socket NachOS fd: %d está abierto: %s\n",
+          sockfd,
+          currentThread->tabla->isOpened(sockfd) ? "sí" : "no");*/ //Depuración
 
    char ip[64];
    int val;
@@ -460,7 +478,8 @@ void NachOS_Connect() {		// System call 31
    }
    ip[63] = '\0';
    /*Pruebas locales
-   const char *ip = "127.0.0.1";
+   const char *ip = "127.0.0.1";*/
+   /*strcpy(ip, "172.18.11.204");
    port = 8080;*/
    if (!currentThread->tabla->isOpened(sockfd))
    {
@@ -483,7 +502,7 @@ void NachOS_Connect() {		// System call 31
 
    int res = connect(unixfd, (struct sockaddr *)&addr, sizeof(addr));
    machine->WriteRegister(2, (res < 0) ? -1 : 0);
-
+   //printf("Saliendo de NachOS_Connect\n"); //Depuración
    returnFromSystemCall();
 }
 
