@@ -294,7 +294,7 @@ void Nachos_ForkThread(void *arg)
    currentThread->space->RestoreState();
 
    // Dirección de retorno: cuando termine, se llama a Exit
-   machine->WriteRegister(RetAddrReg, 8);
+   machine->WriteRegister(RetAddrReg, 8); // 8 = Exit en hilo hijo
 
    // Establecer la rutina que el usuario pidió ejecutar
    machine->WriteRegister(PCReg, (long)args->userFunc);
