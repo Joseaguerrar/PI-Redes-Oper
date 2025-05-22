@@ -37,6 +37,15 @@
 #include <string.h>
 
 void returnFromSystemCall(); // forward declaration
+void Nachos_ForkThread(void *arg); // forward declaration
+
+// Estructura para pasar argumentos a NachosForkThread
+struct ForkArgs
+{
+   void *userFunc;
+   int stackBase;
+};
+
 /*
  *  System call interface: Halt()
  */
@@ -120,6 +129,17 @@ void NachOS_Write() {		// System call 6
    int addr = machine->ReadRegister(4); // Dirección del buffer
    int size = machine->ReadRegister(5); // Tamaño del buffer
    int fd = machine->ReadRegister(6); // File descriptor
+
+   // Validación: dirección válida y dentro del espacio de usuario
+   int limit = currentThread->space->GetNumPages() * PageSize;
+
+   if (addr < 0 || addr >= limit || (addr + size) > limit)
+   {
+      printf("ERROR: Write recibió dirección fuera de rango: %d\n", addr);
+      machine->WriteRegister(2, -1);
+      returnFromSystemCall();
+      return;
+   }
    
    char buffer[512];
    int val;
@@ -237,6 +257,29 @@ void NachOS_Close() {		// System call 8
  *  System call interface: void Fork( void (*func)() )
  */
 void NachOS_Fork() {		// System call 9
+   DEBUG('u', "Entering Fork System call\n");
+
+   // Contador estático para asignar una pila distinta a cada hilo
+   static int threadCounter = 0;
+   int threadId = threadCounter++;
+
+   // Crear el nuevo hilo
+   Thread *newT = new Thread("Forked thread");
+
+   // Crear un nuevo espacio de direcciones con la misma memoria compartida
+   newT->space = new AddrSpace(currentThread->space, threadId);
+
+   // Calcular la base de la pila para este hilo
+   int stackBase = NumPhysPages * PageSize - (threadId + 1) * UserStackSize - 16;
+
+   ForkArgs *args = new ForkArgs{(void *)(long)machine->ReadRegister(4), stackBase};
+
+   // Lanzar el hilo con sus argumentos
+   newT->Fork(Nachos_ForkThread, (void *)args);
+
+   returnFromSystemCall();
+
+   DEBUG('u', "Exiting Fork System call\n");
 }
 
 
