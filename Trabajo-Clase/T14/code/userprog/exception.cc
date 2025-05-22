@@ -171,6 +171,7 @@ void NachOS_Write() {		// System call 6
  *  System call interface: OpenFileId Read( char *, int, OpenFileId )
  */
 void NachOS_Read() {		// System call 7
+   //printf("Entrando a NachOS_Read\n"); //Depuración
    int addr = machine->ReadRegister(4); // Dirección del buffer en user memory
    int size = machine->ReadRegister(5); // Cantidad de bytes a leer
    int fd = machine->ReadRegister(6);   // File descriptor
@@ -202,9 +203,12 @@ void NachOS_Read() {		// System call 7
       }
 
       int unixFD = currentThread->tabla->getUnixHandle(fd);
+      //printf("Ejecutando syscall Read() sobre fd=%d, esperando datos...\n", fd); //Depuración
+
       bytesRead = read(unixFD, buffer, size);
       if (bytesRead < 0)
       {
+         printf("Error en read()\n");
          machine->WriteRegister(2, -1);
          returnFromSystemCall();
          return;
@@ -363,6 +367,47 @@ void NachOS_Socket() {			// System call 30
  *  System call interface: Socket_t Connect( char *, int )
  */
 void NachOS_Connect() {		// System call 31
+   int sockfd = machine->ReadRegister(4);
+   int addrUser = machine->ReadRegister(5); // Dirección de la IP en memoria de usuario
+   int port = machine->ReadRegister(6);
+
+   char ip[64];
+   int val;
+   for (int i = 0; i < 63; ++i)
+   {
+      if (!machine->ReadMem(addrUser + i, 1, &val))
+         break;
+      ip[i] = (char)val;
+      if (ip[i] == '\0')
+         break;
+   }
+   ip[63] = '\0';
+   /*Pruebas locales
+   const char *ip = "127.0.0.1";
+   port = 8080;*/
+   if (!currentThread->tabla->isOpened(sockfd))
+   {
+      machine->WriteRegister(2, -1);
+      returnFromSystemCall();
+      return;
+   }
+
+   int unixfd = currentThread->tabla->getUnixHandle(sockfd);
+   struct sockaddr_in addr;
+   memset(&addr, 0, sizeof(addr));
+   addr.sin_family = AF_INET;
+   addr.sin_port = htons(port);
+   if (inet_pton(AF_INET, ip, &addr.sin_addr) <= 0)
+   {
+      machine->WriteRegister(2, -1);
+      returnFromSystemCall();
+      return;
+   }
+
+   int res = connect(unixfd, (struct sockaddr *)&addr, sizeof(addr));
+   machine->WriteRegister(2, (res < 0) ? -1 : 0);
+
+   returnFromSystemCall();
 }
 
 
