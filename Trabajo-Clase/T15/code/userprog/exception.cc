@@ -283,7 +283,7 @@ void NachOS_Fork() {		// System call 9
 }
 
 /*
- *
+ *  Función que ejecuta el hilo creado por Fork
  */
 void Nachos_ForkThread(void *arg)
 {
