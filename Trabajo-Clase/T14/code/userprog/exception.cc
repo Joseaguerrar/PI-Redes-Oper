@@ -29,6 +29,13 @@
 #include <fcntl.h>  // Al inicio del archivo
 #include <unistd.h> // Para close()
 
+//Sockets
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+
 void returnFromSystemCall(); // forward declaration
 /*
  *  System call interface: Halt()
@@ -331,8 +338,26 @@ void NachOS_CondBroadcast() {		// System call 23
  *  System call interface: Socket_t Socket( int, int )
  */
 void NachOS_Socket() {			// System call 30
-}
+   int family = machine->ReadRegister(4);   // AF_INET_NachOS o AF_INET6_NachOS
+   int type = machine->ReadRegister(5);     // SOCK_STREAM_NachOS o SOCK_DGRAM_NachOS
+   int protocol = machine->ReadRegister(6); // usualmente 0
 
+   int af = (family == AF_INET_NachOS) ? AF_INET : AF_INET6;
+   int socktype = (type == SOCK_STREAM_NachOS) ? SOCK_STREAM : SOCK_DGRAM;
+
+   int sockfd = socket(af, socktype, protocol);
+   if (sockfd < 0)
+   {
+      machine->WriteRegister(2, -1);
+   }
+   else
+   {
+      int nachosFD = currentThread->tabla->Open(sockfd);
+      machine->WriteRegister(2, nachosFD);
+   }
+
+   returnFromSystemCall();
+}
 
 /*
  *  System call interface: Socket_t Connect( char *, int )
