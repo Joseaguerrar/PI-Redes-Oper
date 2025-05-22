@@ -1,0 +1,8 @@
+
+https://os.ecci.ucr.ac.cr/ci0122/NachOS/roadMapNachos.pdf
+
+https://os.ecci.ucr.ac.cr/ci0122/NachOS/Hilos-Sincron.html
+
+https://os.ecci.ucr.ac.cr/ci1310/Nachos/salsa/index.html
+
+https://en.wikipedia.org/wiki/Not_Another_Completely_Heuristic_Operating_System
