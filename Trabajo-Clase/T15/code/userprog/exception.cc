@@ -294,7 +294,7 @@ void Nachos_ForkThread(void *arg)
    currentThread->space->RestoreState();
 
    // Dirección de retorno: cuando termine, se llama a Exit
-   machine->WriteRegister(RetAddrReg, 8); // 8 = Exit directo en hilo hijo
+   machine->WriteRegister(RetAddrReg, 4); // Se puede usar 8 para salida directa
    /*0:   jal main          # $ra = 4
      4:   move $4, $0
      8:   jal Exit*/
