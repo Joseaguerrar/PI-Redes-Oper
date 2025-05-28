@@ -1,0 +1,64 @@
+Archivos fuentes del proyecto:
+
+addrspace.cc contains no classes.
+addrspace.h contains AddrSpace,
+bitmap.cc contains no classes.
+bitmap.h contains BitMap,
+bool.h contains bool,
+console.cc contains no classes.
+console.h contains Console,
+copyright.h contains no classes.
+directory.cc contains no classes.
+directory.h contains DirectoryEntry, Directory,
+disk.cc contains no classes.
+disk.h contains Disk,
+exception.cc contains no classes.
+filehdr.cc contains no classes.
+filehdr.h contains FileHeader,
+filesys.cc contains no classes.
+filesys.h contains FileSystem,
+fstest.cc contains no classes.
+interrupt.cc contains no classes.
+interrupt.h contains PendingInterrupt, IntType, IntStatus, Interrupt, MachineStatus,
+list.cc contains no classes.
+list.h contains List, ListElement,
+machine.cc contains no classes.
+machine.h contains Machine, Instruction, ExceptionType,
+main.cc contains no classes.
+mipssim.cc contains no classes.
+mipssim.h contains OpString, RegType, OpInfo,
+network.cc contains no classes.
+network.h contains PacketHeader, NetworkAddress, Network,
+openfile.cc contains no classes.
+openfile.h contains OpenFile,
+pc.cc contains no classes.
+process.cc contains no classes.
+process.h contains no classes.
+progtest.cc contains no classes.
+scheduler.cc contains no classes.
+scheduler.h contains Scheduler,
+stats.cc contains no classes.
+stats.h contains Statistics,
+switch.h contains no classes.
+syncconsole.cc contains no classes.
+syncconsole.h contains SynchConsole,
+synch.cc contains no classes.
+synch.h contains Lock, Condition, Semaphore,
+synchdisk.cc contains no classes.
+synchdisk.h contains SynchDisk,
+synchlist.cc contains no classes.
+synchlist.h contains SynchList,
+syscall.h contains OpenFileId, SpaceId,
+sysdep.cc contains no classes.
+sysdep.h contains no classes.
+system.cc contains no classes.
+system.h contains no classes.
+thread.cc contains no classes.
+thread.h contains ThreadStatus, Thread,
+threadtest.cc contains no classes.
+timer.cc contains no classes.
+timer.h contains Timer,
+translate.cc contains no classes.
+translate.h contains TranslationEntry,
+utility.cc contains no classes.
+utility.h contains VoidNoArgFunctionPtr, VoidFunctionPtr,
