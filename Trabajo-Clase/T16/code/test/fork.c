@@ -9,7 +9,7 @@ void rutina(int param)
 
 int main()
 {
-    Fork((void*)rutina);
+    Fork(rutina);
     Write("basura", 6, 1);
 }
 
