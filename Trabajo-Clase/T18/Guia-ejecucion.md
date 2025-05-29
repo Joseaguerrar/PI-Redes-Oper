@@ -64,6 +64,12 @@ Use Ctrl+C para detener el servidor cuando termine.
 
 Resumen rápido
 
+Desde terminal para saber la ip del servidor que va a pedir el cliente:
+
+```bash
+ip addr
+```
+
 Terminal 1: Ejecutar servidor en server-cliente
 
 ```bash
