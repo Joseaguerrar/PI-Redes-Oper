@@ -1,6 +1,6 @@
 #  Manual de Ejecución: Servidor y Cliente NachOS (`nachitos`)
 
-Este manual explica cómo ejecutar el servidor C++ y luego hacer que el cliente NachOS (`nachitos`) se conecte a él, usando sockets.
+Este manual explica cómo ejecutar el servidor C++ y luego hacer que el cliente NachOS se conecte a él, usando sockets.
 
 ---
 
