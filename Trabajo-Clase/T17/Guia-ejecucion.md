@@ -75,5 +75,5 @@ Terminal 2: Ejecutar cliente NachOS
 
 ```bash
 cd code/userprog
-./nachos -x ../test/nachitos
+./nachos -x ../test/cliente
 ```
