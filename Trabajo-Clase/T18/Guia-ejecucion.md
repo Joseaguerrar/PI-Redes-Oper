@@ -64,7 +64,7 @@ Use Ctrl+C para detener el servidor cuando termine.
 
 Resumen rápido
 
-Terminal 1: Ejecutar servidor
+Terminal 1: Ejecutar servidor en server-cliente
 
 ```bash
 make
