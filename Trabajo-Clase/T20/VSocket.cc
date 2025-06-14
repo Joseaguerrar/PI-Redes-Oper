@@ -36,32 +36,44 @@
   *  @param     bool ipv6: if we need a IPv6 socket
   *
  **/
-void VSocket::BuildSocket( char t, bool IPv6 ){
-
-
+void VSocket::BuildSocket(char t, bool IPv6)
+{
    this->IPv6 = IPv6;
    this->type = t;
-  
-   int st;
-   int domain = IPv6 ? AF_INET6 : AF_INET;  // IPv4 o IPv6
+
+   int domain = IPv6 ? AF_INET6 : AF_INET; // IPv4 o IPv6
    int sockType;
 
-   if (t == 's') {
-       sockType = SOCK_STREAM;  // stream (TCP)
-   } else if (t == 'd') {
-       sockType = SOCK_DGRAM;  // DGram (UDP)
-   } else {
-       std::cout << "estás usando: " << t << std::endl;
-       throw std::invalid_argument("VSocket::BuildSocket: Tipo de socket inválido. Use 's' para STREAM (TCP) o 'd' para DATAGRAM (UDP)");
+   if (t == 's')
+   {
+      sockType = SOCK_STREAM; // stream (TCP)
+   }
+   else if (t == 'd')
+   {
+      sockType = SOCK_DGRAM; // DGram (UDP)
+   }
+   else
+   {
+      std::cout << "estás usando: " << t << std::endl;
+      throw std::invalid_argument("VSocket::BuildSocket: Tipo de socket inválido. Use 's' para STREAM (TCP) o 'd' para DATAGRAM (UDP)");
    }
 
-   int protocol = 0;  // 0 para protocolo por defecto
+   int protocol = 0; // 0 para protocolo por defecto
 
-   st = socket(domain, sockType, protocol);
-   if (st == -1) {
-       throw std::runtime_error("VSocket::BuildSocket: error al crear el socket");
+   int st = socket(domain, sockType, protocol);
+   if (st == -1)
+   {
+      throw std::runtime_error("VSocket::BuildSocket: error al crear el socket");
    }
-   
+
+   // Esta parte soluciona el problema de "Address already in use"
+   int yes = 1;
+   if (setsockopt(st, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) < 0)
+   {
+      perror("setsockopt(SO_REUSEADDR)");
+      throw std::runtime_error("VSocket::BuildSocket: no se pudo establecer SO_REUSEADDR");
+   }
+
    this->idSocket = st;
    // std::cout << "\nidsocket " << st  << "  " << IPv6 << std::endl;
 }
