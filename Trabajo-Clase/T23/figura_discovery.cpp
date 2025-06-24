@@ -105,7 +105,7 @@ void tcp_figure_server()
         VSocket *cliente = servidor->AcceptConnection(); // Esperar conexión de un tenedor
 
         // Leer solicitud
-        char buffer[512];
+        char buffer[512] = {0};
         cliente->Read(buffer, sizeof(buffer) - 1);
         buffer[511] = '\0';
 
@@ -115,10 +115,15 @@ void tcp_figure_server()
 
         if (pos != string::npos)
         {
-            // Extraer nombre de la figura de la solicitud
-            string nombre_figura = request.substr(pos + prefix.length());
+            // Extraer el resto después de "GET /figure/"
+            string resto = request.substr(pos + prefix.length());
 
-            // Eliminar saltos de línea al final (si hay)
+            // Cortar en el primer espacio (que viene antes del HTTP/1.1)
+            size_t espacio = resto.find(' ');
+            string nombre_figura = (espacio != string::npos) ? resto.substr(0, espacio) : resto;
+
+            // Eliminar caracteres de nueva línea y retorno de carro
+            nombre_figura.erase(remove(nombre_figura.begin(), nombre_figura.end(), '\r'), nombre_figura.end());
             nombre_figura.erase(remove(nombre_figura.begin(), nombre_figura.end(), '\n'), nombre_figura.end());
 
             // Buscar la figura en el sistema de archivos
