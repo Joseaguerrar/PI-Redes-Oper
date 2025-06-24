@@ -93,7 +93,7 @@ void discovery_thread()
 
                 istringstream figs_stream(lista);
                 string figura;
-                lock_guard<mutex> lock(tabla_mutex); // Protege acceso
+                lock_guard<mutex> lock(tabla_mutex);
                 while (getline(figs_stream, figura, ','))
                 {
                     tabla_ruteo[figura] = ip;
@@ -110,114 +110,126 @@ void discovery_thread()
 }
 
 // ---------------------------------------------
-// Hilo HTTP: escucha en puerto 8080 y responde peticiones del cliente
+// Función que atiende una conexión HTTP
+// ---------------------------------------------
+void manejar_peticion_http(VSocket *cliente)
+{
+    char buffer[2048] = {0};
+    size_t bytes = cliente->Read(buffer, sizeof(buffer) - 1);
+    buffer[bytes] = '\0';
+
+    string request(buffer);
+    string prefix = "GET /figure?name=";
+    size_t pos = request.find(prefix);
+
+    if (pos != string::npos)
+    {
+        string nombre_figura = request.substr(pos + prefix.length());
+        size_t fin = nombre_figura.find(' ');
+        if (fin != string::npos)
+            nombre_figura = nombre_figura.substr(0, fin);
+
+        nombre_figura.erase(remove_if(nombre_figura.begin(), nombre_figura.end(),
+                                      [](char c)
+                                      { return !isalnum(c) && c != '_' && c != '-'; }),
+                            nombre_figura.end());
+
+        string ip_destino;
+        {
+            lock_guard<mutex> lock(tabla_mutex);
+            if (tabla_ruteo.find(nombre_figura) != tabla_ruteo.end())
+                ip_destino = tabla_ruteo[nombre_figura];
+        }
+
+        if (!ip_destino.empty())
+        {
+            try
+            {
+                Socket servidor_tcp('s');
+                servidor_tcp.BuildSocket('s');
+                servidor_tcp.MakeConnection(ip_destino.c_str(), TCP_SERVER_PORT);
+
+                string solicitud = "GET /figure/" + nombre_figura;
+                servidor_tcp.Write(solicitud.c_str(), solicitud.size());
+
+                char respuesta[2048] = {0};
+                struct timeval timeout;
+                timeout.tv_sec = TIMEOUT_RESPONSE;
+                timeout.tv_usec = 0;
+                setsockopt(servidor_tcp.idSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
+                size_t bytes = servidor_tcp.Read(respuesta, sizeof(respuesta) - 1);
+                respuesta[bytes] = '\0';
+
+                string body = "<html><body><pre>\n" + string(respuesta) + "\n</pre></body></html>";
+                string http_response =
+                    "HTTP/1.1 200 OK\r\n"
+                    "Content-Type: text/html; charset=UTF-8\r\n"
+                    "Content-Length: " +
+                    to_string(body.size()) + "\r\n\r\n" + body;
+
+                cliente->Write(http_response.c_str(), http_response.size());
+                cout << "[HTTP] Figura '" << nombre_figura << "' enviada al cliente.\n";
+                servidor_tcp.Close();
+            }
+            catch (...)
+            {
+                string err = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+                cliente->Write(err.c_str(), err.size());
+                cout << "[HTTP] Timeout/error al contactar servidor de figura '" << nombre_figura << "'.\n";
+            }
+        }
+        else
+        {
+            string err = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
+            cliente->Write(err.c_str(), err.size());
+            cout << "[HTTP] Figura '" << nombre_figura << "' no registrada en tabla.\n";
+        }
+    }
+    else if (request.find("GET /list") != string::npos)
+    {
+        string body = "<html><body><h2>Figuras disponibles:</h2><ul>";
+        {
+            lock_guard<mutex> lock(tabla_mutex);
+            for (const auto &par : tabla_ruteo)
+                body += "<li>" + par.first + "</li>";
+        }
+        body += "</ul></body></html>";
+
+        string http_response =
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html; charset=UTF-8\r\n"
+            "Content-Length: " +
+            to_string(body.size()) + "\r\n\r\n" + body;
+
+        cliente->Write(http_response.c_str(), http_response.size());
+        cout << "[HTTP] Lista de figuras enviada al cliente.\n";
+    }
+    else
+    {
+        string err = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
+        cliente->Write(err.c_str(), err.size());
+        cout << "[HTTP] Solicitud inválida.\n";
+    }
+
+    cliente->Close();
+    delete cliente;
+}
+
+// ---------------------------------------------
+// Hilo HTTP que atiende a múltiples clientes concurrentes
 // ---------------------------------------------
 void atender_clientes_http()
 {
     VSocket *servidor = new Socket('s');
     servidor->Bind(CLIENT_HTTP_PORT);
-    servidor->MarkPassive(5); // Cola de conexiones
+    servidor->MarkPassive(5);
     cout << "[HTTP] Servidor escuchando en puerto " << CLIENT_HTTP_PORT << "\n";
 
     while (true)
     {
-        VSocket *cliente = servidor->AcceptConnection(); // Espera cliente
-        char buffer[512];
-        cliente->Read(buffer, sizeof(buffer) - 1);
-        buffer[511] = '\0';
-
-        string request(buffer);
-        string prefix = "GET /figure?name=";
-        size_t pos = request.find(prefix);
-
-        if (pos != string::npos)
-        {
-            // Extraer nombre de la figura desde la URL
-            string nombre_figura = request.substr(pos + prefix.length());
-            size_t fin = nombre_figura.find(' ');
-            if (fin != string::npos){
-                nombre_figura = nombre_figura.substr(0, fin);
-            }
-            // Filtrar caracteres inválidos (solo alfanuméricos, guión y guión bajo)
-            nombre_figura.erase(remove_if(nombre_figura.begin(), nombre_figura.end(),
-                                          [](char c)
-                                          { return !isalnum(c) && c != '_' && c != '-'; }),
-                                nombre_figura.end());
-
-            string ip_destino;
-
-            // Buscar en la tabla de ruteo
-            {
-                lock_guard<mutex> lock(tabla_mutex);
-                if (tabla_ruteo.find(nombre_figura) != tabla_ruteo.end())
-                {
-                    ip_destino = tabla_ruteo[nombre_figura];
-                }
-            }
-
-            if (!ip_destino.empty())
-            {
-                try
-                {
-                    // Contactar al servidor de figuras por TCP
-                    Socket servidor_tcp('s');
-                    servidor_tcp.BuildSocket('s');
-                    servidor_tcp.MakeConnection(ip_destino.c_str(), TCP_SERVER_PORT);
-
-                    string solicitud = "GET /figure/" + nombre_figura;
-                    servidor_tcp.Write(solicitud.c_str(), solicitud.size());
-
-                    // Leer respuesta con timeout
-                    char respuesta[2048] = {0};
-                    struct timeval timeout;
-                    timeout.tv_sec = TIMEOUT_RESPONSE;
-                    timeout.tv_usec = 0;
-                    setsockopt(servidor_tcp.idSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-
-                    size_t bytes = servidor_tcp.Read(respuesta, sizeof(respuesta) - 1);
-                    respuesta[bytes] = '\0';
-
-                    string body = "<html><body><pre>\n" + string(respuesta) + "\n</pre></body></html>";
-                    // Construir respuesta HTTP con la figura en <pre>
-                    string http_response =
-                        "HTTP/1.1 200 OK\r\n"
-                        "Content-Type: text/html; charset=UTF-8\r\n"
-                        "Content-Length: " +
-                        to_string(body.size()) + "\r\n"
-                                                            "\r\n<html><body><pre>\n" +
-                        string(respuesta) + "\n</pre></body></html>";
-
-                    cliente->Write(http_response.c_str(), http_response.size());
-                    cout << "[HTTP] Figura '" << nombre_figura << "' enviada al cliente.\n";
-                    servidor_tcp.Close();
-                }
-                catch (...)
-                {
-                    // Si falla la conexión TCP
-                    string err = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
-                    cliente->Write(err.c_str(), err.size());
-                    cout << "[HTTP] Timeout/error al contactar servidor de figura '" << nombre_figura << "'.\n";
-                }
-            }
-            else
-            {
-                // Figura no encontrada en la tabla
-                string err = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
-                cliente->Write(err.c_str(), err.size());
-                cout << "[HTTP] Figura '" << nombre_figura << "' no registrada en tabla.\n";
-            }
-        }
-        else
-        {
-            // Solicitud mal formada
-            string err = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
-            cliente->Write(err.c_str(), err.size());
-            cout << "[HTTP] Solicitud inválida.\n";
-        }
-
-        // Cierra conexión con el cliente
-        cliente->Close();
-        delete cliente;
+        VSocket *cliente = servidor->AcceptConnection();
+        thread(manejar_peticion_http, cliente).detach(); // Cada cliente en su hilo
     }
 
     delete servidor;
