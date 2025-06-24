@@ -34,6 +34,37 @@ vector<string> broadcast_ips = {
 map<string, string> tabla_ruteo;
 mutex tabla_mutex; // Protege el acceso a la tabla
 
+char* generar_figura_error()
+{
+    // Definir una figura de error en un buffer dinámico
+    char *figura_de_error = new char[400]; // Asignar suficiente espacio para la figura
+
+    // Llenar la figura con el diseño de error
+    const char *error =
+        "           ______\n\
+          /      \\\n\
+         |  X  X  |\n\
+         |    ^   |  \n\
+         |   ---  |   \n\
+          \\______/\n\
+            |  |\n\
+     _______|  |_______\n\
+    |      ERROR       |\n\
+    |  SYSTEM FAILURE  |\n\
+    | FIGURE NOT FOUND |\n\
+    |__________________|\n\
+       __/        \\__\n\
+      /              \\\n\
+     /________________\\\n";
+
+    // Copiar el contenido del error al buffer
+    std::strcpy(figura_de_error, error);
+    // std::cout << figura_de_error << std::endl;
+
+    // Retornar el puntero a la figura de error
+    return figura_de_error;
+}
+
 // ---------------------------------------------
 // Hilo de descubrimiento: envía broadcast y recibe respuestas UDP
 // ---------------------------------------------
@@ -136,11 +167,13 @@ void manejar_peticion_http(VSocket *cliente)
 
     if (pos != string::npos)
     {
+        // Extraer el nombre de la figura de la URL
         string nombre_figura = request.substr(pos + prefix.length());
         size_t fin = nombre_figura.find(' ');
         if (fin != string::npos)
             nombre_figura = nombre_figura.substr(0, fin);
 
+        // Filtrar caracteres no válidos
         nombre_figura.erase(remove_if(nombre_figura.begin(), nombre_figura.end(),
                                       [](char c)
                                       { return !isalnum(c) && c != '_' && c != '-'; }),
@@ -148,6 +181,7 @@ void manejar_peticion_http(VSocket *cliente)
 
         string ip_destino;
         {
+            // Buscar la figura en la tabla de ruteo
             lock_guard<mutex> lock(tabla_mutex);
             if (tabla_ruteo.find(nombre_figura) != tabla_ruteo.end())
                 ip_destino = tabla_ruteo[nombre_figura];
@@ -161,6 +195,7 @@ void manejar_peticion_http(VSocket *cliente)
                 servidor_tcp.BuildSocket('s');
                 servidor_tcp.MakeConnection(ip_destino.c_str(), TCP_SERVER_PORT);
 
+                // Solicitar la figura al servidor correspondiente
                 string solicitud = "GET /figure/" + nombre_figura;
                 servidor_tcp.Write(solicitud.c_str(), solicitud.size());
 
@@ -171,8 +206,16 @@ void manejar_peticion_http(VSocket *cliente)
                 setsockopt(servidor_tcp.idSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
                 size_t bytes = servidor_tcp.Read(respuesta, sizeof(respuesta) - 1);
+
+                if (bytes == 0)
+                {
+                    // No se recibió nada, se considera error
+                    throw std::runtime_error("Respuesta vacía del servidor");
+                }
+
                 respuesta[bytes] = '\0';
 
+                // Construir respuesta HTTP válida con el contenido (figura o error)
                 string body = "<html><body><pre>\n" + string(respuesta) + "\n</pre></body></html>";
                 string http_response =
                     "HTTP/1.1 200 OK\r\n"
@@ -186,6 +229,7 @@ void manejar_peticion_http(VSocket *cliente)
             }
             catch (...)
             {
+                // Si ocurre una excepción, se responde con 404
                 string err = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
                 cliente->Write(err.c_str(), err.size());
                 cout << "[HTTP] Timeout/error al contactar servidor de figura '" << nombre_figura << "'.\n";
@@ -193,13 +237,26 @@ void manejar_peticion_http(VSocket *cliente)
         }
         else
         {
-            string err = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
-            cliente->Write(err.c_str(), err.size());
-            cout << "[HTTP] Figura '" << nombre_figura << "' no registrada en tabla.\n";
+            // Si la figura no está en la tabla de ruteo, responder con figura de error
+            extern char *generar_figura_error(); // asegúrate de tener esta función o algo similar
+            char *error_figura = generar_figura_error();
+
+            string body = "<html><body><pre>\n" + string(error_figura) + "\n</pre></body></html>";
+            string http_response =
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: text/html; charset=UTF-8\r\n"
+                "Content-Length: " +
+                to_string(body.size()) + "\r\n\r\n" + body;
+
+            cliente->Write(http_response.c_str(), http_response.size());
+            cout << "[HTTP] Figura '" << nombre_figura << "' no registrada. Figura de error enviada.\n";
+
+            delete[] error_figura;
         }
     }
     else if (request.find("GET /list") != string::npos)
     {
+        // Construir lista HTML de todas las figuras disponibles
         string body = "<html><body><h2>Figuras disponibles:</h2><ul>";
         {
             lock_guard<mutex> lock(tabla_mutex);
@@ -219,6 +276,7 @@ void manejar_peticion_http(VSocket *cliente)
     }
     else
     {
+        // Cualquier otra solicitud no válida
         string err = "HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n";
         cliente->Write(err.c_str(), err.size());
         cout << "[HTTP] Solicitud inválida.\n";
