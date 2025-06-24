@@ -313,9 +313,16 @@ size_t VSocket::recvFrom( void * buffer, size_t size, void * addr ) {
     // Llamada al sistema para recibir datos
     ssize_t bytesReceived = recvfrom(idSocket, buffer, size, 0, (struct sockaddr*)srcAddr, &addrLen);
 
-    if (bytesReceived == -1) {
-        std::cerr << "Error en recvfrom: " << strerror(errno) << " (" << errno << ")" << std::endl;
-        throw std::runtime_error("VSocket::recvFrom: Error al recibir datos");
+    if (bytesReceived == -1)
+    {
+       if (errno == EAGAIN || errno == EWOULDBLOCK)
+       {
+          // No se recibieron datos dentro del tiempo — no es un error crítico
+          return 0;
+       }
+
+       std::cerr << "Error en recvfrom: " << strerror(errno) << " (" << errno << ")" << std::endl;
+       throw std::runtime_error("VSocket::recvFrom: Error al recibir datos");
     }
 
     return static_cast<size_t>(bytesReceived);
