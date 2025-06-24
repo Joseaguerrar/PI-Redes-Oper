@@ -27,7 +27,14 @@ using namespace std;
 
 // Lista de direcciones broadcast para descubrimiento (solo localhost en este ejemplo)
 vector<string> broadcast_ips = {
-    "127.0.0.255" // broadcast local (para pruebas)
+    "127.0.0.255", // broadcast local (para pruebas)
+    "172.16.123.15", // /28 (Profes)
+    "172.16.123.31", // /28 ISLA 1
+    "172.16.123.47", // /28 ISLA 2
+    "172.16.123.63", // /28 ISLA 3
+    "172.16.123.79", // /28 ISLA 4
+    "172.16.123.95", // /28 ISLA 5
+    "172.16.123.111" // /28 ISLA 6
 };
 
 // Tabla de ruteo: figura -> IP del servidor que la contiene
@@ -309,11 +316,12 @@ void atender_clientes_http()
 // ---------------------------------------------
 int main()
 {
+    cout << "[INIT] Tenedor activo.\n";
+
     // Iniciar hilos: descubrimiento y HTTP
     thread t1(discovery_thread);
     thread t2(atender_clientes_http);
 
-    cout << "[INIT] Tenedor activo.\n";
 
     t1.join();
     t2.join();
