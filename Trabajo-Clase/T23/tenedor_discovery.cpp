@@ -238,7 +238,6 @@ void manejar_peticion_http(VSocket *cliente)
         else
         {
             // Si la figura no está en la tabla de ruteo, responder con figura de error
-            extern char *generar_figura_error(); // asegúrate de tener esta función o algo similar
             char *error_figura = generar_figura_error();
 
             string body = "<html><body><pre>\n" + string(error_figura) + "\n</pre></body></html>";
