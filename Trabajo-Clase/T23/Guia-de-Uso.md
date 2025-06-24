@@ -62,20 +62,20 @@ Se utiliza `make` con los siguientes objetivos:
 
 ## Ejecución
 
-### 1. Levantar el servidor de figuras
+### 1. Levantar el servidor de figuras en una terminal
 
 ```bash
-./exec/figura_discovery.out
+ make run_figuras
 ```
 
 - Carga figuras desde el sistema de archivos (almacenadas localmente).
 - Responde a descubrimientos por UDP en el puerto **5353**.
 - Atiende solicitudes TCP en el puerto **8081**.
 
-### 2. Levantar el tenedor
+### 2. Levantar el tenedor en otra terminal
 
 ```bash
-./exec/tenedor_discovery.out
+ make run_tenedor
 ```
 
 - Envía mensajes de descubrimiento por UDP a `127.0.0.255` (o IP de broadcast real).
@@ -84,68 +84,44 @@ Se utiliza `make` con los siguientes objetivos:
 
 ---
 
-## Prueba usando `curl`
+## Prueba usando navegador
 
 Una vez ambos programas estén corriendo, puede simular un cliente desde otra terminal con:
+
+- Abra el navegador y escriba rutas como:
+<localhost:8080/figure?name=gato>
+<localhost:8080/figure?name=sombrilla>
+<localhost:8080/figure?name=barco>
+- El navegador enviará una solicitud HTTP al Tenedor.
+- El Tenedor buscará la IP asociada a "gato" en su tabla de ruteo.
+- Contactará al servidor de figuras por TCP y pedirá la figura con `GET /figure/gato`.
+
+- También puede listar las figuras conocidas con:
+<localhost:8080/list>
+
+## Prueba usando `curl` en otra terminal
 
 ```bash
 curl http://localhost:8080/figure?name=gato
 ```
 
-Esto generará:
-
-- Una solicitud HTTP al Tenedor.
-- El Tenedor buscará la IP asociada a "gato".
-- Contactará al servidor de figuras por TCP y pedirá la figura con:
-
-  ```
-  GET /figure/gato
-  ```
-
-- El servidor de figuras responderá con el arte ASCII.
-- El Tenedor lo devuelve formateado como HTML dentro del `<pre>` para visualización.
-
-Si la figura no se encuentra:
-
-- El tenedor muestra mensaje de que no se encontró la figura en la tabla de ruteo.
-
----
-
-## Consideraciones de Red
-
-- Para pruebas locales, el broadcast se realiza a `127.0.0.255`.
-- En una red real, debe usarse la IP de broadcast real. Usa `ip addr` para averiguarla, por ejemplo:
+## Prueba levantando cliente en terminal
 
 ```bash
-ip addr show
+ ./exec/MirrorClient.out gato
 ```
-
-Y busque la línea:
-
-```
-inet 172.16.123.81/28 brd 172.16.123.95 ...
-```
-
-Cambia `127.0.0.255` por `172.16.123.95` en `broadcast_ips` del `tenedor_discovery.cpp`.
 
 ---
 
-## Formato del Mensaje de Descubrimiento
+## Comportamiento esperado del sistema
 
-**Solicitud (desde Tenedor al broadcast UDP):**
+- Si se accede a `http://localhost:8080/figure?name=algoquenoexiste`, y esa figura no está en la tabla de ruteo, se devuelve una **respuesta 404 Not Found**.
+- Si ocurre un error de red al contactar al servidor de figuras, también se devuelve una **404 Not Found**.
+- En esos casos, el cliente verá una página vacía o error según el navegador.
+- **Cuando el servidor de figuras responde, pero la figura no existe, se envía una figura de error ASCII.**
+- Si se accede a una URL inválida como `http://localhost:8080/list` sin la ruta exacta, también se devolverá una **400 Bad Request**. Esto es **esperado** y se hace para mantener el formato de las rutas estrictamente controlado.
 
-```
-GET /servers
-```
+---
 
-**Respuesta (desde servidor de figuras):**
+Nota: si `/list` no coincide exactamente con la lógica de parseo esperada, es posible que devuelva 400. Asegúrese de escribir la ruta tal como fue definida.
 
-```
-<nombre_servidor> | <ip> | <figura1,figura2,...>
-```
-
-Ejemplo:
-
-```
-ServidorA | 127.0.0.1 | gato,barco,arbol_navidad,sombrilla
-```
