@@ -46,12 +46,19 @@ void discovery_thread()
     int yes = 1;
     setsockopt(s.idSocket, SOL_SOCKET, SO_BROADCAST, &yes, sizeof(yes));
 
+    struct timeval timeout;
+    timeout.tv_sec = TIMEOUT_RESPONSE;
+    timeout.tv_usec = 0;
+    setsockopt(s.idSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(DISCOVERY_PORT);
 
     while (true)
     {
+        cout << "[DISCOVERY] Nueva ronda de descubrimiento\n";
+
         // Enviar broadcast a todas las IPs configuradas
         string mensaje = "GET /servers";
         for (const auto &ip : broadcast_ips)
@@ -74,6 +81,11 @@ void discovery_thread()
 
             // Recibir datos
             size_t len = s.recvFrom(buffer, sizeof(buffer) - 1, &senderAddr);
+            if (len == 0)
+            {
+                // Timeout sin datos, seguir escuchando hasta que termine TIMEOUT_RESPONSE
+                continue;
+            }
             buffer[len] = '\0';
 
             // Esperado: ServerName|ip|figura1,figura2,...
