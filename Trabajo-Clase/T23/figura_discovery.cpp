@@ -17,7 +17,7 @@
 
 // Parámetros de red
 #define SERVER_NAME "ServidorA"
-#define SERVER_IP "127.0.0.1"      // IP local (solo para pruebas)
+#define SERVER_IP "172.16.123.83"      // IP local (solo para pruebas)
 #define SERVER_PORT 8081           // Puerto TCP donde se reciben solicitudes de figuras
 #define SERVER_DISCOVERY_PORT 5353 // Puerto UDP donde se escuchan mensajes de descubrimiento
 
