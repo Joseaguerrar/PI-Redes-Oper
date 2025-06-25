@@ -34,7 +34,9 @@ vector<string> broadcast_ips = {
     "172.16.123.63", // /28 ISLA 3
     "172.16.123.79", // /28 ISLA 4
     "172.16.123.95", // /28 ISLA 5
-    "172.16.123.111" // /28 ISLA 6
+    "172.16.123.111", // /28 ISLA 6
+    "10.1.141.68", // publica de isla 6
+    "10.1.137.31"
 };
 
 // Tabla de ruteo: figura -> IP del servidor que la contiene
@@ -128,6 +130,7 @@ void discovery_thread()
 
             // Esperado: ServerName|ip|figura1,figura2,...
             string respuesta(buffer);
+            std::cout << "respuesta de server: " << respuesta <<std::endl;
             istringstream iss(respuesta);
             string nombre, ip, lista;
 
@@ -180,11 +183,7 @@ void manejar_peticion_http(VSocket *cliente)
         if (fin != string::npos)
             nombre_figura = nombre_figura.substr(0, fin);
 
-        // Filtrar caracteres no válidos
-        nombre_figura.erase(remove_if(nombre_figura.begin(), nombre_figura.end(),
-                                      [](char c)
-                                      { return !isalnum(c) && c != '_' && c != '-'; }),
-                            nombre_figura.end());
+        std::cout<<nombre_figura<<std::endl;
 
         string ip_destino;
         {
@@ -193,7 +192,7 @@ void manejar_peticion_http(VSocket *cliente)
             if (tabla_ruteo.find(nombre_figura) != tabla_ruteo.end())
                 ip_destino = tabla_ruteo[nombre_figura];
         }
-
+        std::cout << "ip de la figura: " << ip_destino << std::endl;
         if (!ip_destino.empty())
         {
             try
@@ -234,8 +233,9 @@ void manejar_peticion_http(VSocket *cliente)
                 cout << "[HTTP] Figura '" << nombre_figura << "' enviada al cliente.\n";
                 servidor_tcp.Close();
             }
-            catch (...)
+            catch (exception e)
             {
+                std :: cout << "error del try catch: " << e.what() << std::endl;
                 // Si ocurre una excepción, se responde con 404
                 string err = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n";
                 cliente->Write(err.c_str(), err.size());
