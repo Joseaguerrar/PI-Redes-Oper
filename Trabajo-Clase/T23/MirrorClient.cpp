@@ -7,13 +7,13 @@
 #include <arpa/inet.h>
 #include "Socket.h"
 
-#define TENEDOR_IP "127.0.0.1"
+#define TENEDOR_IP "172.16.123.84"
 #define TENEDOR_PORT 8080
 #define SERVER_DISCOVERY_PORT 5353
 #define BUFFER_SIZE 4096
 
 std::vector<std::string> broadcast_ips = {
-    "127.0.0.255"};
+    "172.16.123.95"};
 
 int main(int argc, char *argv[])
 {
