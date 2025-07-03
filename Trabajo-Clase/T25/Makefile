@@ -16,17 +16,13 @@ OBJS_CLIENT := $(OBJDIR)/MirrorClient.o $(OBJDIR)/VSocket.o $(OBJDIR)/Socket.o
 OBJS_FIGURA := $(OBJDIR)/figura_discovery.o $(OBJDIR)/VSocket.o $(OBJDIR)/Socket.o $(OBJDIR)/file_system.o
 OBJS_TENEDOR := $(OBJDIR)/tenedor_discovery.o $(OBJDIR)/VSocket.o $(OBJDIR)/Socket.o
 
-OBJS_LISTAR := $(OBJDIR)/listar_figuras.o $(OBJDIR)/file_system.o
-OBJS_EXTRAER := $(OBJDIR)/extraer_figura.o $(OBJDIR)/file_system.o
 
 # Ejecutables
 TARGET_CLIENT := $(BINDIR)/MirrorClient.out
 TARGET_FIGURA := $(BINDIR)/figura_discovery.out
 TARGET_TENEDOR := $(BINDIR)/tenedor_discovery.out
-TARGET_LISTAR := $(BINDIR)/listar_figuras.out
-TARGET_EXTRAER := $(BINDIR)/extraer_figura.out
 
-TARGETS := $(TARGET_CLIENT) $(TARGET_FIGURA) $(TARGET_TENEDOR) $(TARGET_LISTAR) $(TARGET_EXTRAER)
+TARGETS := $(TARGET_CLIENT) $(TARGET_FIGURA) $(TARGET_TENEDOR)
 
 .PHONY: all clean run client figuras tenedor listar extraer
 
@@ -50,12 +46,6 @@ $(TARGET_FIGURA): $(OBJS_FIGURA) | $(BINDIR)
 $(TARGET_TENEDOR): $(OBJS_TENEDOR) | $(BINDIR)
 	$(CXX) $^ -o $@
 
-$(TARGET_LISTAR): $(OBJS_LISTAR) | $(BINDIR)
-	$(CXX) $^ -o $@
-
-$(TARGET_EXTRAER): $(OBJS_EXTRAER) | $(BINDIR)
-	$(CXX) $^ -o $@
-
 # Crear directorios si no existen
 $(OBJDIR) $(BINDIR):
 	mkdir -p $@
@@ -64,8 +54,6 @@ $(OBJDIR) $(BINDIR):
 client: $(TARGET_CLIENT)
 figuras: $(TARGET_FIGURA)
 tenedor: $(TARGET_TENEDOR)
-listar: $(TARGET_LISTAR)
-extraer: $(TARGET_EXTRAER)
 
 # Limpieza
 clean:
@@ -84,8 +72,3 @@ run_figuras: figuras
 run_tenedor: tenedor
 	./$(TARGET_TENEDOR)
 
-run_listar: listar
-	./$(TARGET_LISTAR)
-
-run_extraer: extraer
-	@echo "Uso: ./$(TARGET_EXTRAER) <nombre_figura>"
